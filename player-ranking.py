@@ -1,12 +1,13 @@
 import requests
 import json
 import pandas as pd
+import datetime
 
 # Rating coefficients - must sum up to 1.0 and values must be >= 0
 currentLadderCoefficient = 0.25
 previousLadderCoefficient = 0.1
-warHistoryCoefficient = 0.45
-currentWarCoefficient = 0.2
+warHistoryCoefficient = 0.4
+currentWarCoefficient = 0.25
 
 # New player coefficient is used when a player does not appear in war log
 # Must be in interval [0, 1]
@@ -42,6 +43,23 @@ def handle_html_status_code(status_code, response_text):
         print(response_text)
         exit()
 
+def get_adjusted_war_weights(current_war_weight, war_history_weight):
+    now = datetime.datetime.utcnow()
+    seconds_since_midnight = (now - now.replace(hour=10, minute=0, second=0, microsecond=0)).total_seconds()
+    offset = (now.weekday() - 3) % 7
+    # Find datetime for last Thursday 10:00 am UTC (roughly the begin of the war days)
+    begin_of_war_days = now - datetime.timedelta(days = offset, seconds = seconds_since_midnight)
+    time_since_start = now - begin_of_war_days
+    if time_since_start > datetime.timedelta(days = 4):
+        # Training days are currently happening, do not count current war
+        return (0, current_war_weight + war_history_weight)
+    else:
+        # War days are currently happening
+        # Linearly increase weight for current war
+        war_days_progress = time_since_start / datetime.timedelta(days = 4)
+        print("progress:", war_days_progress)
+        return (current_war_weight * war_days_progress, war_history_weight + current_war_weight * (1 - war_days_progress))
+
 def get_current_members(clan_tag):
     print("Building list of current members...")
     api_call = f"/clans/%23{clan_tag[1:]}"
@@ -58,7 +76,7 @@ def get_current_members(clan_tag):
     return members
 
 def get_ladder_statistics(members):
-    print(f"Fetch ladder statistics for all {len(members)} members...")
+    print(f"Fetching ladder statistics for all {len(members)} members...")
     ladder_statistics = {}
     for i, player_tag in enumerate(members.keys()):
         print(f"Handling player {i} out of {len(members)}.", end = "\r")
@@ -80,7 +98,7 @@ def get_ladder_statistics(members):
     return pd.DataFrame.from_dict(ladder_statistics, orient = "index")
 
 def get_war_statistics(clan_tag, members):
-    print("Fetch river race statistics...")
+    print("Fetching river race statistics...")
     api_call = f"/clans/%23{clan_tag[1:]}/riverracelog"
     response = requests.get(baseURL + api_call, headers = headers)
     handle_html_status_code(response.status_code, response.text)
@@ -104,7 +122,7 @@ def get_war_statistics(clan_tag, members):
     return pd.DataFrame.from_dict(war_statistics, orient = "index")
 
 def get_current_river_race(clan_tag):
-    print("Fetch current river race...")
+    print("Fetching current river race...")
     api_call = f"/clans/%23{clan_tag[1:]}/currentriverrace"
     response = requests.get(baseURL + api_call, headers = headers)
     handle_html_status_code(response.status_code, response.text)
@@ -133,6 +151,8 @@ def evaluate_performance(members, ladder_stats, war_log, current_war):
     current_fame_range = current_max_fame - current_min_fame
     new_player_war_log_mean = war_log_min_fame + war_history_fame_range * newPlayerCoefficient
 
+    current_war_coefficient, war_history_coefficient = get_adjusted_war_weights(currentWarCoefficient, warHistoryCoefficient)
+
     for player_tag in members.keys():
         current_best_trophies = ladder_stats.at[player_tag, "current_season_best_trophies"]
         current_ladder_rating = (current_best_trophies - current_season_min_trophies) / current_season_trophy_range
@@ -145,13 +165,21 @@ def evaluate_performance(members, ladder_stats, war_log, current_war):
 
         members[player_tag]["rating"] = (currentLadderCoefficient * current_ladder_rating
                                         + previousLadderCoefficient * previous_ladder_rating
-                                        + currentWarCoefficient * current_war_rating
-                                        + warHistoryCoefficient * war_log_rating)
+                                        + current_war_coefficient * current_war_rating
+                                        + war_history_coefficient * war_log_rating)
         members[player_tag]["current_season"] = current_ladder_rating
         members[player_tag]["previous_season"] = previous_ladder_rating
         members[player_tag]["current_war"] = current_war_rating
         members[player_tag]["war_history"] = war_log_rating
+
     performance = pd.DataFrame.from_dict(members, orient = "index")
+    print("Performance rating calculated according to the following formula:")
+    print(("rating = "
+        f"{currentLadderCoefficient} * current_season "
+        f"+ {previousLadderCoefficient} * previous_season " 
+        f"+ {current_war_coefficient} * current_war "
+        f"+ {war_history_coefficient} * war_history"
+    ))
     return performance.sort_values("rating")
 
 print(f"Evaluating performance of players from {clanTag}...")
@@ -162,3 +190,4 @@ ladderStatistics = get_ladder_statistics(members)
 
 performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar)
 print(performance)
+performance.to_csv("player-ranking.csv", sep = ";")
