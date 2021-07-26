@@ -161,7 +161,12 @@ def evaluate_performance(members, ladder_stats, war_log, current_war):
         war_log_mean = war_log.at[player_tag, "mean"] if player_tag in war_log.index else new_player_war_log_mean
         war_log_rating = (war_log_mean - war_log_min_fame) / war_history_fame_range
         current_fame = current_war[player_tag]
-        current_war_rating = (current_fame - current_min_fame) / current_fame_range
+        if current_fame_range > 0:
+            current_war_rating = (current_fame - current_min_fame) / current_fame_range
+        else:
+            # Default value that is used during trainings days.
+            # Does not affect the rating on those days
+            current_war_rating = 1
 
         members[player_tag]["rating"] = (currentLadderCoefficient * current_ladder_rating
                                         + previousLadderCoefficient * previous_ladder_rating
@@ -191,3 +196,4 @@ ladderStatistics = get_ladder_statistics(members)
 performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar)
 print(performance)
 performance.to_csv("player-ranking.csv", sep = ";")
+input()
