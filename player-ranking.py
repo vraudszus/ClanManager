@@ -88,10 +88,10 @@ def get_ladder_statistics(members):
         previous_season = league_statistics["previousSeason"]
         best_season = league_statistics["bestSeason"]
         ladder_statistics[player_tag] = {
-            "current_season_best_trophies": current_season["bestTrophies"],
+            "current_season_best_trophies": current_season["bestTrophies"] if "bestTrophies" in current_season.keys() else current_season["trophies"],
             "current_season_trophies": current_season["trophies"],
-            "previous_season_best_trophies": previous_season["bestTrophies"],
-            "previous_season_trophies": previous_season["trophies"],
+            "previous_season_best_trophies": previous_season["bestTrophies"] if "bestTrophies" in previous_season.keys() else None,
+            "previous_season_trophies": previous_season["trophies"] if "trophies" in previous_season.keys() else None,
             "best_season_trophies": best_season["trophies"],
         }
     print("Collection of ladder statistics has finished.")
@@ -185,7 +185,7 @@ def evaluate_performance(members, ladder_stats, war_log, current_war):
         f"+ {current_war_coefficient} * current_war "
         f"+ {war_history_coefficient} * war_history"
     ))
-    return performance.sort_values("rating")
+    return performance.sort_values("rating", ascending = False)
 
 print(f"Evaluating performance of players from {clanTag}...")
 members = get_current_members(clanTag)
@@ -194,6 +194,9 @@ currentWar = get_current_river_race(clanTag)
 ladderStatistics = get_ladder_statistics(members)
 
 performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar)
+performance = performance.reset_index(drop = True)
+performance.index += 1
 print(performance)
-performance.to_csv("player-ranking.csv", sep = ";")
+performance.to_csv("player-ranking.csv", sep = ";", float_format= "%.3f")
+performance.to_csv("D:/Dropbox/player-ranking.csv", float_format= "%.3f")
 input()
