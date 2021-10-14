@@ -194,6 +194,7 @@ currentWar = get_current_river_race(clanTag)
 ladderStatistics = get_ladder_statistics(members)
 
 performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar)
+performance = performance.fillna(0)
 performance = performance.reset_index(drop = True)
 performance.index += 1
 print(performance)
