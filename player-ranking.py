@@ -2,6 +2,14 @@ import requests
 import json
 import pandas as pd
 import datetime
+import argparse
+
+CLI = argparse.ArgumentParser()
+CLI.add_argument(
+  "--ignore_wars",
+  nargs="*",
+  type = int,
+)
 
 # Rating coefficients - must sum up to 1.0 and values must be >= 0
 currentLadderCoefficient = 0.25
@@ -135,7 +143,17 @@ def get_current_river_race(clan_tag):
     print("Handling of current river race has finished.")
     return pd.Series(current_war_statistics)
 
-def evaluate_performance(members, ladder_stats, war_log, current_war):
+def ignore_selected_wars(currentWar, warLog, ignore_wars):
+    if ignore_wars:
+        for value in ignore_wars:
+            if value == 0:
+                currentWar = 0
+            else:
+                warLog.iloc[:, -value-1] = 0
+    return currentWar, warLog
+
+def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_wars):
+    current_war, war_log = ignore_selected_wars(current_war, war_log, ignore_wars)
     current_season_max_trophies = ladder_stats["current_season_best_trophies"].max()
     current_season_min_trophies = ladder_stats["current_season_best_trophies"].min()
     current_season_trophy_range = current_season_max_trophies - current_season_min_trophies
@@ -179,21 +197,22 @@ def evaluate_performance(members, ladder_stats, war_log, current_war):
 
     performance = pd.DataFrame.from_dict(members, orient = "index")
     print("Performance rating calculated according to the following formula:")
-    print(("rating = "
-        f"{currentLadderCoefficient} * current_season "
-        f"+ {previousLadderCoefficient} * previous_season " 
-        f"+ {current_war_coefficient} * current_war "
-        f"+ {war_history_coefficient} * war_history"
+    print(("rating =",
+        "{:.2f}".format(currentLadderCoefficient), "* current_season",
+        "{:.2f}".format(previousLadderCoefficient), "* previous_season",
+        "{:.2f}".format(current_war_coefficient), "* current_war",
+        "{:.2f}".format(war_history_coefficient), "* war_history"
     ))
     return performance.sort_values("rating", ascending = False)
 
+args = CLI.parse_args()
 print(f"Evaluating performance of players from {clanTag}...")
 members = get_current_members(clanTag)
 warStatistics = get_war_statistics(clanTag, members)
 currentWar = get_current_river_race(clanTag)
 ladderStatistics = get_ladder_statistics(members)
 
-performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar)
+performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar, args.ignore_wars)
 performance = performance.fillna(0)
 performance = performance.reset_index(drop = True)
 performance.index += 1
