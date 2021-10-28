@@ -3,6 +3,7 @@ import json
 import pandas as pd
 import datetime
 import argparse
+import numpy as np
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument(
@@ -147,9 +148,9 @@ def ignore_selected_wars(currentWar, warLog, ignore_wars):
     if ignore_wars:
         for value in ignore_wars:
             if value == 0:
-                currentWar = 0
+                currentWar.values[:] = 0
             else:
-                warLog.iloc[:, -value-1] = 0
+                warLog.iloc[:, -value-1] = np.nan
     return currentWar, warLog
 
 def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_wars):
