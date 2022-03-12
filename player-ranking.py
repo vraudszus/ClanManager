@@ -184,6 +184,10 @@ def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_war
         previous_ladder_rating = (previous_best_trophies - previous_season_min_trophies) / previous_season_trophy_range
         war_log_mean = war_log.at[player_tag, "mean"] if player_tag in war_log.index else new_player_war_log_mean
         war_log_rating = (war_log_mean - war_log_min_fame) / war_history_fame_range
+        if player_tag in war_log.index:
+            war_log_mean_without_first_war = war_log.loc[player_tag].drop("mean").dropna()[:-1].mean()
+        else:
+            war_log_mean_without_first_war = None
         current_fame = current_war[player_tag]
         if current_fame_range > 0:
             current_war_rating = (current_fame - current_min_fame) / current_fame_range
@@ -200,8 +204,12 @@ def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_war
         members[player_tag]["previous_season"] = previous_ladder_rating
         members[player_tag]["current_war"] = current_war_rating
         members[player_tag]["war_history"] = war_log_rating
+        members[player_tag]["avg_fame"] = int(war_log.at[player_tag, "mean"]) if player_tag in war_log.index else None
+        members[player_tag]["avg_fame[:-1]"] = war_log_mean_without_first_war
 
     performance = pd.DataFrame.from_dict(members, orient = "index")
+    performance["avg_fame"] = np.floor(pd.to_numeric(performance["avg_fame"], errors='coerce')).astype('Int64')
+    performance["avg_fame[:-1]"] = np.floor(pd.to_numeric(performance["avg_fame[:-1]"], errors='coerce')).astype('Int64')
     print("Performance rating calculated according to the following formula:")
     print("rating =",
         "{:.2f}".format(currentLadderCoefficient), "* current_season",
@@ -211,11 +219,11 @@ def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_war
     )
     return performance.sort_values("rating", ascending = False)
 
-def print_pending_promotions(members, war_log, minFame, minWars):
+def print_pending_promotions(members, war_log, min_Fame, min_Wars):
     # returns list of all members with >= <minFame> fame in at least 7 <minWars>
     only_members = dict((k, v["name"]) for (k,v) in members.items() if v["role"] == "member")
-    deserving_logs = war_log[war_log >= minFame].count(axis="columns")
-    deserving_logs = deserving_logs[deserving_logs >= minWars]
+    deserving_logs = war_log[war_log >= min_Fame].count(axis="columns")
+    deserving_logs = deserving_logs[deserving_logs >= min_Wars]
     deserving_logs = deserving_logs[deserving_logs.index.isin(only_members.keys())]
     deserving_logs = list(deserving_logs.index.map(lambda k: only_members[k]))
     if deserving_logs:
@@ -229,7 +237,7 @@ currentWar = get_current_river_race(clanTag)
 ladderStatistics = get_ladder_statistics(members)
 
 performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar, args.ignore_wars)
-performance = performance.fillna(0)
+# performance = performance.fillna(0)
 performance = performance.reset_index(drop = True)
 performance.index += 1
 print(performance)
