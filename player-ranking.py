@@ -22,6 +22,10 @@ currentWarCoefficient = 0.25
 # Must be in interval [0, 1]
 newPlayerCoefficient = 0.5
 
+# Promotion requirements
+minFameForCountingWar = 1600 # = min fame after doing all 16 battles in a week
+minCountingWars = 7
+
 list_of_coefficients = [
     currentLadderCoefficient, 
     previousLadderCoefficient, 
@@ -207,12 +211,11 @@ def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_war
     )
     return performance.sort_values("rating", ascending = False)
 
-def print_pending_promotions(members, war_log):
-    # returns list of all members with >=1600 fame in at least 7 wars
-    # 1600 = min fame after doing all 16 battles in a week
+def print_pending_promotions(members, war_log, minFame, minWars):
+    # returns list of all members with >= <minFame> fame in at least 7 <minWars>
     only_members = dict((k, v["name"]) for (k,v) in members.items() if v["role"] == "member")
-    deserving_logs = war_log[war_log >= 1600].count(axis="columns")
-    deserving_logs = deserving_logs[deserving_logs >= 7]
+    deserving_logs = war_log[war_log >= minFame].count(axis="columns")
+    deserving_logs = deserving_logs[deserving_logs >= minWars]
     deserving_logs = deserving_logs[deserving_logs.index.isin(only_members.keys())]
     deserving_logs = list(deserving_logs.index.map(lambda k: only_members[k]))
     if deserving_logs:
@@ -230,7 +233,7 @@ performance = performance.fillna(0)
 performance = performance.reset_index(drop = True)
 performance.index += 1
 print(performance)
-print_pending_promotions(members, warStatistics)
+print_pending_promotions(members, warStatistics, minFameForCountingWar, minCountingWars)
 performance.to_csv("player-ranking.csv", sep = ";", float_format= "%.3f")
 performance.to_csv("D:/Dropbox/player-ranking.csv", float_format= "%.3f")
 input()
