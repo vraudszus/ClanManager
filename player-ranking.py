@@ -79,6 +79,7 @@ def get_current_members(clan_tag):
     for member in member_list:
         info = {
             "name": member["name"],
+            "role": member["role"],
         }
         members[member["tag"]] = info
     print(f"{len(members)} current members have been found.")
@@ -206,6 +207,17 @@ def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_war
     )
     return performance.sort_values("rating", ascending = False)
 
+def print_pending_promotions(members, war_log):
+    # returns list of all members with >=1600 fame in at least 7 wars
+    # 1600 = min fame after doing all 16 battles in a week
+    only_members = dict((k, v["name"]) for (k,v) in members.items() if v["role"] == "member")
+    deserving_logs = war_log[war_log >= 1600].count(axis="columns")
+    deserving_logs = deserving_logs[deserving_logs >= 7]
+    deserving_logs = deserving_logs[deserving_logs.index.isin(only_members.keys())]
+    deserving_logs = list(deserving_logs.index.map(lambda k: only_members[k]))
+    if deserving_logs:
+        print("Pending promitions for:", ', '.join(deserving_logs))
+
 args = CLI.parse_args()
 print(f"Evaluating performance of players from {clanTag}...")
 members = get_current_members(clanTag)
@@ -218,6 +230,7 @@ performance = performance.fillna(0)
 performance = performance.reset_index(drop = True)
 performance.index += 1
 print(performance)
+print_pending_promotions(members, warStatistics)
 performance.to_csv("player-ranking.csv", sep = ";", float_format= "%.3f")
 performance.to_csv("D:/Dropbox/player-ranking.csv", float_format= "%.3f")
 input()
