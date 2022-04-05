@@ -98,8 +98,15 @@ def get_ladder_statistics(members):
         response = requests.get(baseURL + api_call, headers = headers)
         handle_html_status_code(response.status_code, response.text)
         league_statistics = json.loads(response.text)["leagueStatistics"]
-        current_season = league_statistics["currentSeason"]
-        previous_season = league_statistics["previousSeason"]
+        
+        if "previousSeason" in league_statistics:
+            current_season = league_statistics["currentSeason"]
+            previous_season = league_statistics["previousSeason"]
+        else:
+            # handle case when a user has not yet logged in after season reset
+            current_season = {"trophies": 5001} # check how this works for non-league players
+            previous_season = league_statistics["currentSeason"]
+
         best_season = league_statistics["bestSeason"]
         ladder_statistics[player_tag] = {
             "current_season_best_trophies": current_season["bestTrophies"] if "bestTrophies" in current_season.keys() else current_season["trophies"],
@@ -188,7 +195,8 @@ def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_war
             war_log_mean_without_first_war = war_log.loc[player_tag].drop("mean").dropna()[:-1].mean()
         else:
             war_log_mean_without_first_war = None
-        current_fame = current_war[player_tag]
+        # player_tag is not present in current_war until a user has log in after season reset
+        current_fame = current_war[player_tag] if player_tag in current_war else 0
         if current_fame_range > 0:
             current_war_rating = (current_fame - current_min_fame) / current_fame_range
         else:
