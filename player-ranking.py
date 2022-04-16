@@ -22,9 +22,9 @@ currentWarCoefficient = 0.25
 # Must be in interval [0, 1]
 newPlayerCoefficient = 0.5
 
-# Promotion requirements
-minFameForCountingWar = 1600 # = min fame after doing all 16 battles in a week
-minCountingWars = 7
+# Promotion/demotion requirements
+minFameForCountingWar = 2000
+minCountingWars = 8
 
 list_of_coefficients = [
     currentLadderCoefficient, 
@@ -227,15 +227,24 @@ def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_war
     )
     return performance.sort_values("rating", ascending = False)
 
-def print_pending_promotions(members, war_log, min_Fame, min_Wars):
-    # returns list of all members with >= <minFame> fame in at least 7 <minWars>
+def print_pending_rank_changes(members, war_log, min_fame, min_wars):
+    warLog = war_log.drop("mean", axis=1)
+    # promotions
     only_members = dict((k, v["name"]) for (k,v) in members.items() if v["role"] == "member")
-    deserving_logs = war_log[war_log >= min_Fame].count(axis="columns")
-    deserving_logs = deserving_logs[deserving_logs >= min_Wars]
-    deserving_logs = deserving_logs[deserving_logs.index.isin(only_members.keys())]
-    deserving_logs = list(deserving_logs.index.map(lambda k: only_members[k]))
-    if deserving_logs:
-        print("Pending promitions for:", ', '.join(deserving_logs))
+    promotion_deserving_logs = warLog[warLog >= min_fame].count(axis="columns")
+    promotion_deserving_logs = promotion_deserving_logs[promotion_deserving_logs >= min_wars]
+    promotion_deserving_logs = promotion_deserving_logs[promotion_deserving_logs.index.isin(only_members.keys())]
+    promotion_deserving_logs = list(promotion_deserving_logs.index.map(lambda k: only_members[k]))
+    if promotion_deserving_logs:
+        print("Pending promotions for:", ', '.join(promotion_deserving_logs))
+    # demotions
+    only_elders = dict((k, v["name"]) for (k,v) in members.items() if v["role"] == "elder")
+    demotion_deserving_logs = warLog[warLog >= min_fame].count(axis="columns")
+    demotion_deserving_logs = demotion_deserving_logs[demotion_deserving_logs < min_wars]
+    demotion_deserving_logs = demotion_deserving_logs[demotion_deserving_logs.index.isin(only_elders.keys())]
+    demotion_deserving_logs = list(demotion_deserving_logs.index.map(lambda k: only_elders[k]))
+    if demotion_deserving_logs:
+        print("Pending demotions for:", ', '.join(demotion_deserving_logs))
 
 args = CLI.parse_args()
 print(f"Evaluating performance of players from {clanTag}...")
@@ -249,7 +258,7 @@ performance = evaluate_performance(members, ladderStatistics, warStatistics, cur
 performance = performance.reset_index(drop = True)
 performance.index += 1
 print(performance)
-print_pending_promotions(members, warStatistics, minFameForCountingWar, minCountingWars)
+print_pending_rank_changes(members, warStatistics, minFameForCountingWar, minCountingWars)
 performance.to_csv("player-ranking.csv", sep = ";", float_format= "%.3f")
 performance.to_csv("D:/Dropbox/player-ranking.csv", float_format= "%.3f")
 input()
