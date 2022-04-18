@@ -4,6 +4,8 @@ import pandas as pd
 import datetime
 import argparse
 import numpy as np
+import math
+import gsheetsManager
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument(
@@ -25,6 +27,10 @@ newPlayerCoefficient = 0.5
 # Promotion/demotion requirements
 minFameForCountingWar = 2000
 minCountingWars = 8
+
+warProgress = 1.0 # ranges from 0 to 1
+
+VALID_EXCUSES = ["nicht im Clan", "abgemeldet", "Neuling"]
 
 list_of_coefficients = [
     currentLadderCoefficient, 
@@ -69,9 +75,10 @@ def get_adjusted_war_weights(current_war_weight, war_history_weight):
     else:
         # War days are currently happening
         # Linearly increase weight for current war
-        war_days_progress = time_since_start / datetime.timedelta(days = 4)
-        print("progress:", war_days_progress)
-        return (current_war_weight * war_days_progress, war_history_weight + current_war_weight * (1 - war_days_progress))
+        global warProgress
+        warProgress = time_since_start / datetime.timedelta(days = 4)
+        print("progress:", warProgress)
+        return (current_war_weight * warProgress, war_history_weight + current_war_weight * (1 - warProgress))
 
 def get_current_members(clan_tag):
     print("Building list of current members...")
@@ -165,8 +172,25 @@ def ignore_selected_wars(currentWar, warLog, ignore_wars):
                 warLog.iloc[:, -value-1] = np.nan
     return currentWar, warLog
 
-def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_wars):
+def handle_excuses(service, current_war, war_log, members):
+    excuses = gsheetsManager.get_excuses("Abmeldungen", service)
+    for tag in current_war.items():
+        if tag in members and excuses.at[members[tag]["name"], "current"] in VALID_EXCUSES:
+            current_war.at[tag] = 1600 * warProgress
+            print("Excuse accepted for current CW:", excuses.at[members[tag]["name"], "current"], members[tag]["name"])
+    for war_id in war_log[0:9]:
+        war = war_log[war_id]
+        for tag, fame in war.items():
+            if tag in members:
+                excuse = excuses.at[members[tag]["name"], war.name]
+                if not math.isnan(fame) and excuse in VALID_EXCUSES:
+                    war_log.at[tag, war.name] = 1600 
+                    print("Excuse accepted for", war.name, excuse, members[tag]["name"])
+    return current_war, war_log   
+
+def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_wars, service):
     current_war, war_log = ignore_selected_wars(current_war, war_log, ignore_wars)
+    current_war, war_log = handle_excuses(service, current_war, war_log, members)
     current_season_max_trophies = ladder_stats["current_season_best_trophies"].max()
     current_season_min_trophies = ladder_stats["current_season_best_trophies"].min()
     current_season_trophy_range = current_season_max_trophies - current_season_min_trophies
@@ -253,12 +277,14 @@ warStatistics = get_war_statistics(clanTag, members)
 currentWar = get_current_river_race(clanTag)
 ladderStatistics = get_ladder_statistics(members)
 
-performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar, args.ignore_wars)
-# performance = performance.fillna(0)
+service = gsheetsManager.connect_to_service()
+performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar, args.ignore_wars, service)
 performance = performance.reset_index(drop = True)
 performance.index += 1
 print(performance)
 print_pending_rank_changes(members, warStatistics, minFameForCountingWar, minCountingWars)
+
 performance.to_csv("player-ranking.csv", sep = ";", float_format= "%.3f")
-performance.to_csv("D:/Dropbox/player-ranking.csv", float_format= "%.3f")
+gsheetsManager.write_player_ranking(performance, "PlayerRanking", service)
+gsheetsManager.update_excuse_sheet(members, currentWar, warStatistics, "Abmeldungen", service)
 input()
