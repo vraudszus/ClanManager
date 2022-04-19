@@ -30,7 +30,10 @@ minCountingWars = 8
 
 warProgress = 1.0 # ranges from 0 to 1
 
-VALID_EXCUSES = ["nicht im Clan", "abgemeldet", "Neuling"]
+NOT_IN_CLAN_EXCUSE = "nicht im Clan"
+NEW_PLAYER_EXCUSE = "Neuling"
+PERSONAL_EXCUSE = "abgemeldet"
+VALID_EXCUSES = [NOT_IN_CLAN_EXCUSE, NEW_PLAYER_EXCUSE, PERSONAL_EXCUSE]
 
 list_of_coefficients = [
     currentLadderCoefficient, 
@@ -184,7 +187,10 @@ def handle_excuses(service, current_war, war_log, members):
             if tag in members:
                 excuse = excuses.at[members[tag]["name"], war.name]
                 if not math.isnan(fame) and excuse in VALID_EXCUSES:
-                    war_log.at[tag, war.name] = 1600 
+                    if (excuse == NOT_IN_CLAN_EXCUSE):
+                        war_log.at[tag, war.name] = np.nan
+                    else:
+                        war_log.at[tag, war.name] = 1600 
                     print("Excuse accepted for", war.name, excuse, members[tag]["name"])
     return current_war, war_log   
 
