@@ -42,7 +42,12 @@ def get_sheet_by_name(sheet_name, service):
             if sheet['properties']['title'] == sheet_name:
                 return sheet['properties']['sheetId']
 
+def clear_sheet(sheet_name, service):
+    request = service.spreadsheets().values().clear(spreadsheetId=SPREADSHEET_ID, range=sheet_name)
+    return request.execute()
+
 def write_player_ranking(df, sheet_name, service):
+    clear_sheet(sheet_name, service)
     csv_string = df.to_csv(sep = ";", float_format= "%.3f")
     body = {
         'requests': [{
@@ -71,6 +76,7 @@ def get_excuses(sheet_name, service):
         return pd.DataFrame()
 
 def update_excuse_sheet(members, current_war, war_history, sheet_name, service):
+    clear_sheet(sheet_name, service)
     old_df = get_excuses(sheet_name, service)
     def isnumber(x):
         try:
@@ -86,6 +92,7 @@ def update_excuse_sheet(members, current_war, war_history, sheet_name, service):
     missing_series = pd.Series(index=cur_missing, dtype=str).fillna(NOT_IN_CLAN)
     current_war = current_war.append(missing_series)
     
+    war_history = war_history.iloc[:, :10] # remove mean column
     war_history = war_history.fillna(NOT_IN_CLAN)
     war_history.index = war_history.index.map(lambda x: members[x]["name"])
     war_history = war_history.applymap(isnumber)
@@ -129,7 +136,3 @@ def update_excuse_sheet(members, current_war, war_history, sheet_name, service):
     request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID, body=body)
     response = request.execute()
     return response
-    
-#service = connect_to_service()
-#write_player_ranking(pd.read_csv("player-ranking.csv", sep=";"), "PlayerRanking", service)
-#update_excuse_sheet(get_current_members(clanTag), get_current_river_race(clanTag), get_war_statistics(clanTag, get_current_members(clanTag)), "Abmeldungen", service)
