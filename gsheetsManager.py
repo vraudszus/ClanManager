@@ -76,8 +76,8 @@ def get_excuses(sheet_name, service):
         return pd.DataFrame()
 
 def update_excuse_sheet(members, current_war, war_history, sheet_name, service):
-    clear_sheet(sheet_name, service)
     old_df = get_excuses(sheet_name, service)
+    clear_sheet(sheet_name, service)
     def isnumber(x):
         try:
             float(x)
@@ -108,6 +108,7 @@ def update_excuse_sheet(members, current_war, war_history, sheet_name, service):
     if last_finished_cw not in war_history.columns.tolist():
         new_df = pd.concat([current_war, war_history], axis=1)
         new_df = new_df.rename(columns={0: "current"})
+        print("Write complety new", sheet_name)
     else:
         columns_to_shift = war_history.columns.tolist().index(last_finished_cw)
         if columns_to_shift >= 1:
@@ -115,8 +116,10 @@ def update_excuse_sheet(members, current_war, war_history, sheet_name, service):
             new_df = new_df.rename(columns={"current": war_history.columns.tolist()[columns_to_shift-1]})
             new_df = new_df.rename(columns={0: "current"})
             new_df = new_df.drop(new_df[new_df.eq(NOT_IN_CLAN).sum(1) >= 11].index)
+            print("Shift existing", sheet_name, "by", columns_to_shift, "columns")
         else:
             new_df = old_df
+            print("Restore old", sheet_name)
     
     csv_string = new_df.to_csv(sep = ";")
     body = {
