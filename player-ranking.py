@@ -250,9 +250,9 @@ def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_war
     performance["avg_fame[:-1]"] = np.floor(pd.to_numeric(performance["avg_fame[:-1]"], errors='coerce')).astype('Int64')
     print("Performance rating calculated according to the following formula:")
     print("rating =",
-        "{:.2f}".format(currentLadderCoefficient), "* current_season",
-        "{:.2f}".format(previousLadderCoefficient), "* previous_season",
-        "{:.2f}".format(current_war_coefficient), "* current_war",
+        "{:.2f}".format(currentLadderCoefficient), "* current_season +",
+        "{:.2f}".format(previousLadderCoefficient), "* previous_season +",
+        "{:.2f}".format(current_war_coefficient), "* current_war +",
         "{:.2f}".format(war_history_coefficient), "* war_history"
     )
     return performance.sort_values("rating", ascending = False)
