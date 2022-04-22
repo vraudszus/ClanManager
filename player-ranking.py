@@ -14,6 +14,10 @@ CLI.add_argument(
   type = int,
 )
 
+CR_API_TOKEN_PATH = "API-token.txt"
+GSHEETS_CREDENTIALS_PATH = "credentials.json"
+GSHEETS_TOKEN_PATH = "token.json"
+
 # Rating coefficients - must sum up to 1.0 and values must be >= 0
 currentLadderCoefficient = 0.25
 previousLadderCoefficient = 0.1
@@ -30,6 +34,7 @@ minCountingWars = 8
 
 warProgress = 1.0 # ranges from 0 to 1
 
+# excuses (valid values for cells  in "Abmeldungen" gsheet)
 NOT_IN_CLAN_EXCUSE = "nicht im Clan"
 NEW_PLAYER_EXCUSE = "Neuling"
 PERSONAL_EXCUSE = "abgemeldet"
