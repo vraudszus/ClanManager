@@ -32,7 +32,6 @@ def connect_to_service(credentials_path, token_path):
 
 def get_sheet_by_name(sheet_name, service):
     sheets_with_properties = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID, fields='sheets.properties').execute().get('sheets')
-
     for sheet in sheets_with_properties:
         if 'title' in sheet['properties'].keys():
             if sheet['properties']['title'] == sheet_name:
@@ -116,7 +115,14 @@ def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, shee
         else:
             new_df = old_df
             print("Restore old", sheet_name)
-    
+            
+        for tag in members:
+            # add rows for new players
+            name = members[tag]["name"]
+            if name not in new_df.index:
+                new_df = new_df.append(pd.Series(name=name))
+            
+    new_df.sort_index(inplace=True)
     csv_string = new_df.to_csv(sep = ";")
     body = {
         'requests': [{

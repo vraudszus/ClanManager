@@ -138,7 +138,7 @@ def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_war
             war_log_mean_without_first_war = war_log.loc[player_tag].drop("mean").dropna()[:-1].mean()
         else:
             war_log_mean_without_first_war = None
-        # player_tag is not present in current_war until a user has log in after season reset
+        # player_tag is not present in current_war until a user has logged in after season reset
         current_fame = current_war[player_tag] if player_tag in current_war else 0
         if current_fame_range > 0:
             current_war_rating = (current_fame - current_min_fame) / current_fame_range

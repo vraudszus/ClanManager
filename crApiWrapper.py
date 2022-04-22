@@ -52,7 +52,7 @@ def get_ladder_statistics(members, api_token_path):
             previous_season = league_statistics["previousSeason"]
         else:
             # handle case when a user has not yet logged in after season reset
-            current_season = {"trophies": 5001} # check how this works for non-league players
+            current_season = {"trophies": 5001} # TODO check how this works for non-league players
             previous_season = league_statistics["currentSeason"]
 
         best_season = league_statistics["bestSeason"]
