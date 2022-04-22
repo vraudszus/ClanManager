@@ -1,4 +1,4 @@
-# The best ClanManager for Supercell's game "Clash Royale"
+# The best ClanManager for Supercell's game Clash Royale
 
 - Get detailed insights in the performance of your clan members
 - Who performs well? And who doesn't?
@@ -17,7 +17,7 @@
 - To use Google Sheets you need a Google account. Then follow these steps:
     1. Create a Google Cloud project by following [this](https://developers.google.com/workspace/guides/create-project) guide and [activate](https://developers.google.com/workspace/guides/enable-apis) the "Google Sheets API".
     2. Create OAuth client ID credentials by following [this](https://developers.google.com/workspace/guides/create-credentials#oauth-client-id) guide. Make sure to add you Google account as a "test user". Download the credentials in JSON format. Place the file in the root folder of this project and rename it to `credentials.json`.
-    3. When running the tool for the first time a browser window will ask you to login into a Google account. Use on of the "test user" accounts. This will create the `token.json` file that the app needs to access the Google sheet.
+    3. When running the tool for the first time a browser window will ask you to login into a Google account. Use one of the "test user" accounts. This will create the `token.json` file that the app needs to access the Google sheet.
     4. Manually create a new spreadsheet in Google Sheets and paste the `spreadSheetId` in the `gsheet_spreadsheet_id` field in `properties.yaml` ([How to find the spreadsheetId](gsheet_spreadsheet_id)).
 
 ## Usage
