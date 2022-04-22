@@ -5,7 +5,7 @@ import datetime
 import argparse
 import numpy as np
 import math
-import gsheetsManager
+import gsheeetsApiWrapper
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument(
@@ -176,7 +176,7 @@ def ignore_selected_wars(currentWar, warLog, ignore_wars):
     return currentWar, warLog
 
 def handle_excuses(service, current_war, war_log, members):
-    excuses = gsheetsManager.get_excuses("Abmeldungen", service)
+    excuses = gsheeetsApiWrapper.get_excuses("Abmeldungen", service)
     for tag in current_war.items():
         if tag in members and excuses.at[members[tag]["name"], "current"] in VALID_EXCUSES:
             current_war.at[tag] = 1600 * warProgress
@@ -283,7 +283,7 @@ warStatistics = get_war_statistics(clanTag, members)
 currentWar = get_current_river_race(clanTag)
 ladderStatistics = get_ladder_statistics(members)
 
-service = gsheetsManager.connect_to_service()
+service = gsheeetsApiWrapper.connect_to_service()
 performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar, args.ignore_wars, service)
 performance = performance.reset_index(drop = True)
 performance.index += 1
@@ -291,6 +291,6 @@ print(performance)
 print_pending_rank_changes(members, warStatistics, minFameForCountingWar, minCountingWars)
 
 performance.to_csv("player-ranking.csv", sep = ";", float_format= "%.3f")
-gsheetsManager.write_player_ranking(performance, "PlayerRanking", service)
-gsheetsManager.update_excuse_sheet(members, currentWar, warStatistics, NOT_IN_CLAN_EXCUSE, "Abmeldungen", service)
+gsheeetsApiWrapper.write_player_ranking(performance, "PlayerRanking", service)
+gsheeetsApiWrapper.update_excuse_sheet(members, currentWar, warStatistics, NOT_IN_CLAN_EXCUSE, "Abmeldungen", service)
 input()
