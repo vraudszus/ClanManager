@@ -54,8 +54,8 @@ def ignore_selected_wars(current_war, war_log, ignore_wars):
                 war_log.iloc[:, -value-1] = np.nan
     return current_war, war_log
 
-def accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress):
-    excuses = gsheeetsApiWrapper.get_excuses("Abmeldungen", service)
+def accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id):
+    excuses = gsheeetsApiWrapper.get_excuses("Abmeldungen", service, gsheet_spreadsheet_id)
        
     def handle_war(tag, name, war, fame):
         excuse = excuses.at[name, war]
@@ -165,6 +165,7 @@ def main():
     
     props = yaml.safe_load(open("properties.yaml", "r"))  
     clan_tag = props["clanTag"]
+    cr_api_url = props["crApiUrl"]
     api_tokens = props["apiTokens"]
     cr_token = api_tokens["crApiTokenPath"]
     gsheet_credentials = api_tokens["gsheetsCredentialsPath"]
@@ -177,19 +178,20 @@ def main():
     rating_file = props["ratingFile"]
     rating_gsheet = props["gsheetNames"]["rating"]
     excuses_gsheet = props["gsheetNames"]["excuses"]
+    gsheet_spreadsheet_id = props["gsheet_spreadsheet_id"]
               
     check_coefficients(new_player_coefficient, rating_coefficients)
     print(f"Evaluating performance of players from {clan_tag}...")
-    members = crApiWrapper.get_current_members(clan_tag, cr_token)
-    war_log = crApiWrapper.get_war_statistics(clan_tag, members, cr_token)
-    current_war = crApiWrapper.get_current_river_race(clan_tag, cr_token)
-    ladder = crApiWrapper.get_ladder_statistics(members, cr_token)
+    members = crApiWrapper.get_current_members(clan_tag, cr_token, cr_api_url)
+    war_log = crApiWrapper.get_war_statistics(clan_tag, members, cr_token, cr_api_url)
+    current_war = crApiWrapper.get_current_river_race(clan_tag, cr_token, cr_api_url)
+    ladder = crApiWrapper.get_ladder_statistics(members, cr_token, cr_api_url)
 
     service = gsheeetsApiWrapper.connect_to_service(gsheet_credentials, gsheet_token)
     
     war_progress, rating_coefficients = adjust_war_weights(rating_coefficients)
     current_war, war_log = ignore_selected_wars(current_war, war_log, args.ignore_wars)
-    current_war, war_log = accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress)
+    current_war, war_log = accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id)
     performance = evaluate_performance(members, ladder, war_log, current_war, rating_coefficients, new_player_coefficient)
     performance = performance.reset_index(drop = True)
     performance.index += 1
@@ -197,10 +199,8 @@ def main():
     print_pending_rank_changes(members, war_log, pro_demotion_requirements)
 
     performance.to_csv(rating_file, sep = ";", float_format= "%.3f")
-    gsheeetsApiWrapper.write_player_ranking(performance, rating_gsheet, service)
-    gsheeetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service)
-
-    input() # to prevent console window from closing after execution
+    gsheeetsApiWrapper.write_player_ranking(performance, rating_gsheet, service, gsheet_spreadsheet_id)
+    gsheeetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service, gsheet_spreadsheet_id)
 
 if __name__ == "__main__":
     main()

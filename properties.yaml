@@ -1,5 +1,11 @@
 clanTag: "#GP9GRQ"
 
+# URL of the proxy provided by RoyaleAPI.com
+# Alternatively you can use the official URL "https://api.clashroyale.com/v1"
+# However, this might complicate things if you have a dynamic IP address
+# as you crApiToken is only valid for specific IPs
+crApiUrl: "https://proxy.royaleapi.dev/v1" 
+
 apiTokens:
   crApiTokenPath: "API-token.txt"
   gsheetsCredentialsPath: "credentials.json"
@@ -23,6 +29,8 @@ valid_excuses:
   notInClanExcuse: "nicht im Clan"
   newPlayerExcuse: "Neuling"
   personalExcuse: "abgemeldet"
+
+gsheet_spreadsheet_id: "1bVKGKJOIT6V8BSNRWpt24Ha8fVRXM1xjYluqx-U-N1Q"
 
 gsheetNames:
   rating: "PlayerRanking"

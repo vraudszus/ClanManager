@@ -8,7 +8,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
-SPREADSHEET_ID = "1bVKGKJOIT6V8BSNRWpt24Ha8fVRXM1xjYluqx-U-N1Q"
 
 def connect_to_service(credentials_path, token_path):
     creds = None
@@ -30,25 +29,25 @@ def connect_to_service(credentials_path, token_path):
     
     return build("sheets", "v4", credentials=creds)
 
-def get_sheet_by_name(sheet_name, service):
-    sheets_with_properties = service.spreadsheets().get(spreadsheetId=SPREADSHEET_ID, fields='sheets.properties').execute().get('sheets')
+def get_sheet_by_name(sheet_name, service, spreadsheet_id):
+    sheets_with_properties = service.spreadsheets().get(spreadsheetId=spreadsheet_id, fields='sheets.properties').execute().get('sheets')
     for sheet in sheets_with_properties:
         if 'title' in sheet['properties'].keys():
             if sheet['properties']['title'] == sheet_name:
                 return sheet['properties']['sheetId']
 
-def clear_sheet(sheet_name, service):
-    request = service.spreadsheets().values().clear(spreadsheetId=SPREADSHEET_ID, range=sheet_name)
+def clear_sheet(sheet_name, service, spreadsheet_id):
+    request = service.spreadsheets().values().clear(spreadsheetId=spreadsheet_id, range=sheet_name)
     return request.execute()
 
-def write_player_ranking(df, sheet_name, service):
-    clear_sheet(sheet_name, service)
+def write_player_ranking(df, sheet_name, service, spreadsheet_id):
+    clear_sheet(sheet_name, service, spreadsheet_id)
     csv_string = df.to_csv(sep = ";", float_format= "%.3f")
     body = {
         'requests': [{
             'pasteData': {
                 "coordinate": {
-                    "sheetId": get_sheet_by_name(sheet_name, service),
+                    "sheetId": get_sheet_by_name(sheet_name, service, spreadsheet_id),
                     "rowIndex": "0",
                     "columnIndex": "0",
                 },
@@ -58,21 +57,21 @@ def write_player_ranking(df, sheet_name, service):
             }
         }]
     }
-    request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID, body=body)
+    request = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body)
     response = request.execute()
     return response
 
-def get_excuses(sheet_name, service):                        
-    result = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=sheet_name).execute()
+def get_excuses(sheet_name, service, spreadsheet_id):                        
+    result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=sheet_name).execute()
     data = result.get('values', [])
     if len(data) > 0:
         return pd.DataFrame(data[1:], columns=data[0]).set_index("")
     else:
         return pd.DataFrame()
 
-def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, sheet_name, service):
-    old_df = get_excuses(sheet_name, service)
-    clear_sheet(sheet_name, service)
+def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, sheet_name, service, spreadsheet_id):
+    old_df = get_excuses(sheet_name, service, spreadsheet_id)
+    clear_sheet(sheet_name, service, spreadsheet_id)
     def isnumber(x):
         try:
             float(x)
@@ -128,7 +127,7 @@ def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, shee
         'requests': [{
             'pasteData': {
                 "coordinate": {
-                    "sheetId": get_sheet_by_name(sheet_name, service),
+                    "sheetId": get_sheet_by_name(sheet_name, service, spreadsheet_id),
                     "rowIndex": "0",
                     "columnIndex": "0",
                 },
@@ -138,6 +137,6 @@ def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, shee
             }
         }]
     }
-    request = service.spreadsheets().batchUpdate(spreadsheetId=SPREADSHEET_ID, body=body)
+    request = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body)
     response = request.execute()
     return response
