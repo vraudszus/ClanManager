@@ -11,7 +11,6 @@ from googleapiclient.discovery import build
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 TOKEN_PATH = "token.json"
 SPREADSHEET_ID = "1bVKGKJOIT6V8BSNRWpt24Ha8fVRXM1xjYluqx-U-N1Q"
-NOT_IN_CLAN = "nicht im Clan"
 
 def connect_to_service():
     creds = None
@@ -75,7 +74,7 @@ def get_excuses(sheet_name, service):
     else:
         return pd.DataFrame()
 
-def update_excuse_sheet(members, current_war, war_history, sheet_name, service):
+def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, sheet_name, service):
     old_df = get_excuses(sheet_name, service)
     clear_sheet(sheet_name, service)
     def isnumber(x):
@@ -89,15 +88,15 @@ def update_excuse_sheet(members, current_war, war_history, sheet_name, service):
     current_war.index = current_war.index.map(lambda x: members[x]["name"])
     current_war = current_war.apply(isnumber)
     cur_missing = old_df.index.difference(current_war.index)
-    missing_series = pd.Series(index=cur_missing, dtype=str).fillna(NOT_IN_CLAN)
+    missing_series = pd.Series(index=cur_missing, dtype=str).fillna(not_in_clan_str)
     current_war = current_war.append(missing_series)
     
     war_history = war_history.iloc[:, :10] # remove mean column
-    war_history = war_history.fillna(NOT_IN_CLAN)
+    war_history = war_history.fillna(not_in_clan_str)
     war_history.index = war_history.index.map(lambda x: members[x]["name"])
     war_history = war_history.applymap(isnumber)
     war_missing = old_df.index.difference(war_history.index)
-    missing_df = pd.DataFrame(index=war_missing, columns=war_history.columns).fillna(NOT_IN_CLAN)
+    missing_df = pd.DataFrame(index=war_missing, columns=war_history.columns).fillna(not_in_clan_str)
     war_history = pd.concat([war_history, missing_df])
     
     try:
@@ -115,7 +114,7 @@ def update_excuse_sheet(members, current_war, war_history, sheet_name, service):
             new_df = pd.concat([current_war, war_history.iloc[:, :columns_to_shift-1], old_df], axis=1)
             new_df = new_df.rename(columns={"current": war_history.columns.tolist()[columns_to_shift-1]})
             new_df = new_df.rename(columns={0: "current"})
-            new_df = new_df.drop(new_df[new_df.eq(NOT_IN_CLAN).sum(1) >= 11].index)
+            new_df = new_df.drop(new_df[new_df.eq(not_in_clan_str).sum(1) >= 11].index)
             print("Shift existing", sheet_name, "by", columns_to_shift, "columns")
         else:
             new_df = old_df

@@ -292,5 +292,5 @@ print_pending_rank_changes(members, warStatistics, minFameForCountingWar, minCou
 
 performance.to_csv("player-ranking.csv", sep = ";", float_format= "%.3f")
 gsheetsManager.write_player_ranking(performance, "PlayerRanking", service)
-gsheetsManager.update_excuse_sheet(members, currentWar, warStatistics, "Abmeldungen", service)
+gsheetsManager.update_excuse_sheet(members, currentWar, warStatistics, NOT_IN_CLAN_EXCUSE, "Abmeldungen", service)
 input()
