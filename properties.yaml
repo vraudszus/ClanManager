@@ -1,0 +1,31 @@
+clanTag: "#GP9GRQ"
+
+apiTokens:
+  crApiTokenPath: "API-token.txt"
+  gsheetsCredentialsPath: "credentials.json"
+  gsheetsTokenPath: "token.json"
+
+ratingCoefficients:
+  # must sum up to 1.0 and values must be >= 0
+  currentLadderCoefficient: 0.25
+  previousLadderCoefficient: 0.1
+  warHistoryCoefficient: 0.4
+  currentWarCoefficient: 0.25
+
+# New player coefficient is used when a player does not appear in war log. Must be in interval [0, 1]
+newPlayerCoefficient: 0.5
+
+promotion_demotion_requirements:
+  minFameForCountingWar: 2000
+  minCountingWars: 8
+
+valid_excuses:
+  notInClanExcuse: "nicht im Clan"
+  newPlayerExcuse: "Neuling"
+  personalExcuse: "abgemeldet"
+
+gsheetNames:
+  rating: "PlayerRanking"
+  excuses: "Abmeldungen"
+
+resultFile: "player-ranking.csv"
