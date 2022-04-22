@@ -82,28 +82,30 @@ def ignore_selected_wars(currentWar, warLog, ignore_wars):
                 warLog.iloc[:, -value-1] = np.nan
     return currentWar, warLog
 
-def handle_excuses(service, current_war, war_log, members):
+def accept_excuses(service, current_war, war_log, members):
     excuses = gsheeetsApiWrapper.get_excuses("Abmeldungen", service)
-    for tag in current_war.items():
-        if tag in members and excuses.at[members[tag]["name"], "current"] in VALID_EXCUSES:
-            current_war.at[tag] = 1600 * warProgress
-            print("Excuse accepted for current CW:", excuses.at[members[tag]["name"], "current"], members[tag]["name"])
-    for war_id in war_log[0:9]:
-        war = war_log[war_id]
-        for tag, fame in war.items():
-            if tag in members:
-                excuse = excuses.at[members[tag]["name"], war.name]
+    for tag in members:
+        name = members[tag]["name"]
+        if name in excuses.index:
+            if excuses.at[name, "current"] in VALID_EXCUSES:
+                current_war.at[tag] = 1600 * warProgress
+                print("Excuse accepted for current CW:", excuses.at[name, "current"], name)
+                
+            wars = war_log.loc[tag]
+            for war, fame in wars.items():
+                excuse = excuses.at[name, war]
                 if not math.isnan(fame) and excuse in VALID_EXCUSES:
                     if (excuse == NOT_IN_CLAN_EXCUSE):
-                        war_log.at[tag, war.name] = np.nan
+                        war_log.at[tag, war] = np.nan
                     else:
-                        war_log.at[tag, war.name] = 1600 
-                    print("Excuse accepted for", war.name, excuse, members[tag]["name"])
+                        war_log.at[tag, war] = 1600 
+                    print("Excuse accepted for", war, excuse, name)
+                    
     return current_war, war_log   
 
 def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_wars, service):
     current_war, war_log = ignore_selected_wars(current_war, war_log, ignore_wars)
-    current_war, war_log = handle_excuses(service, current_war, war_log, members)
+    current_war, war_log = accept_excuses(service, current_war, war_log, members)
     current_season_max_trophies = ladder_stats["current_season_best_trophies"].max()
     current_season_min_trophies = ladder_stats["current_season_best_trophies"].min()
     current_season_trophy_range = current_season_max_trophies - current_season_min_trophies
@@ -200,4 +202,5 @@ print_pending_rank_changes(members, warStatistics, minFameForCountingWar, minCou
 performance.to_csv("player-ranking.csv", sep = ";", float_format= "%.3f")
 gsheeetsApiWrapper.write_player_ranking(performance, "PlayerRanking", service)
 gsheeetsApiWrapper.update_excuse_sheet(members, currentWar, warStatistics, NOT_IN_CLAN_EXCUSE, "Abmeldungen", service)
-input()
+
+input() # only to prevent console window from closing after execution
