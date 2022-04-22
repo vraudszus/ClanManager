@@ -1,11 +1,11 @@
-import requests
-import json
 import pandas as pd
 import datetime
 import argparse
 import numpy as np
 import math
+
 import gsheeetsApiWrapper
+import crApiWrapper
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument(
@@ -54,21 +54,6 @@ if not 0 <= newPlayerCoefficient <= 1:
     exit()
 
 clanTag = "#GP9GRQ"
-apiToken = open("API-token.txt", "r").read()
-# The need for whitelisted IPs causes problems with DHCP.
-# To avoid this the proxy of royaleAPI with the whitelisted IP 128.128.128.128 is used
-# baseURL = "https://api.clashroyale.com/v1" # URL of official API
-baseURL = "https://proxy.royaleapi.dev/v1" # URL of proxy from RoyaleAPI
-
-headers = {}
-headers["Accept"] = "application/json"
-headers["authorization"] = f"Bearer {apiToken}"
-
-def handle_html_status_code(status_code, response_text):
-    if status_code != 200:
-        print("Error: Request failed with status code", status_code)
-        print(response_text)
-        exit()
 
 def get_adjusted_war_weights(current_war_weight, war_history_weight):
     now = datetime.datetime.utcnow()
@@ -87,89 +72,6 @@ def get_adjusted_war_weights(current_war_weight, war_history_weight):
         warProgress = time_since_start / datetime.timedelta(days = 4)
         print("progress:", warProgress)
         return (current_war_weight * warProgress, war_history_weight + current_war_weight * (1 - warProgress))
-
-def get_current_members(clan_tag):
-    print("Building list of current members...")
-    api_call = f"/clans/%23{clan_tag[1:]}"
-    response = requests.get(baseURL + api_call, headers = headers)
-    handle_html_status_code(response.status_code, response.text)
-    member_list = json.loads(response.text)["memberList"]
-    members = {}
-    for member in member_list:
-        info = {
-            "name": member["name"],
-            "role": member["role"],
-        }
-        members[member["tag"]] = info
-    print(f"{len(members)} current members have been found.")
-    return members
-
-def get_ladder_statistics(members):
-    print(f"Fetching ladder statistics for all {len(members)} members...")
-    ladder_statistics = {}
-    for i, player_tag in enumerate(members.keys()):
-        print(f"Handling player {i} out of {len(members)}.", end = "\r")
-        api_call = f"/players/%23{player_tag[1:]}"
-        response = requests.get(baseURL + api_call, headers = headers)
-        handle_html_status_code(response.status_code, response.text)
-        league_statistics = json.loads(response.text)["leagueStatistics"]
-        
-        if "previousSeason" in league_statistics:
-            current_season = league_statistics["currentSeason"]
-            previous_season = league_statistics["previousSeason"]
-        else:
-            # handle case when a user has not yet logged in after season reset
-            current_season = {"trophies": 5001} # check how this works for non-league players
-            previous_season = league_statistics["currentSeason"]
-
-        best_season = league_statistics["bestSeason"]
-        ladder_statistics[player_tag] = {
-            "current_season_best_trophies": current_season["bestTrophies"] if "bestTrophies" in current_season.keys() else current_season["trophies"],
-            "current_season_trophies": current_season["trophies"],
-            "previous_season_best_trophies": previous_season["bestTrophies"] if "bestTrophies" in previous_season.keys() else None,
-            "previous_season_trophies": previous_season["trophies"] if "trophies" in previous_season.keys() else None,
-            "best_season_trophies": best_season["trophies"],
-        }
-    print("Collection of ladder statistics has finished.")
-    return pd.DataFrame.from_dict(ladder_statistics, orient = "index")
-
-def get_war_statistics(clan_tag, members):
-    print("Fetching river race statistics...")
-    api_call = f"/clans/%23{clan_tag[1:]}/riverracelog"
-    response = requests.get(baseURL + api_call, headers = headers)
-    handle_html_status_code(response.status_code, response.text)
-    river_races = json.loads(response.text)["items"]
-
-    war_statistics = {}
-    for player_tag in members.keys():
-        war_statistics[player_tag] = {}
-
-    for river_race in river_races:
-        river_race_id = f'{river_race["seasonId"]}.{river_race["sectionIndex"]}'
-        standings = river_race["standings"]
-        for standing in standings:
-            clan = standing["clan"]
-            if clan["tag"] == clanTag:
-                for participant in clan["participants"]:
-                    player_tag = participant["tag"]
-                    if player_tag in war_statistics:
-                        war_statistics[player_tag][river_race_id] = int(participant["fame"])
-    print("Collection of river race statistics has finished.")
-    return pd.DataFrame.from_dict(war_statistics, orient = "index")
-
-def get_current_river_race(clan_tag):
-    print("Fetching current river race...")
-    api_call = f"/clans/%23{clan_tag[1:]}/currentriverrace"
-    response = requests.get(baseURL + api_call, headers = headers)
-    handle_html_status_code(response.status_code, response.text)
-    clan = json.loads(response.text)["clan"]
-
-    current_war_statistics = {}
-    for participant in clan["participants"]:
-        player_tag = participant["tag"]
-        current_war_statistics[player_tag] = int(participant["fame"])
-    print("Handling of current river race has finished.")
-    return pd.Series(current_war_statistics)
 
 def ignore_selected_wars(currentWar, warLog, ignore_wars):
     if ignore_wars:
@@ -283,12 +185,12 @@ def print_pending_rank_changes(members, war_log, min_fame, min_wars):
 
 args = CLI.parse_args()
 print(f"Evaluating performance of players from {clanTag}...")
-members = get_current_members(clanTag)
-warStatistics = get_war_statistics(clanTag, members)
-currentWar = get_current_river_race(clanTag)
-ladderStatistics = get_ladder_statistics(members)
+members = crApiWrapper.get_current_members(clanTag, CR_API_TOKEN_PATH)
+warStatistics = crApiWrapper.get_war_statistics(clanTag, members, CR_API_TOKEN_PATH)
+currentWar = crApiWrapper.get_current_river_race(clanTag, CR_API_TOKEN_PATH)
+ladderStatistics = crApiWrapper.get_ladder_statistics(members, CR_API_TOKEN_PATH)
 
-service = gsheeetsApiWrapper.connect_to_service()
+service = gsheeetsApiWrapper.connect_to_service(GSHEETS_CREDENTIALS_PATH, GSHEETS_TOKEN_PATH)
 performance = evaluate_performance(members, ladderStatistics, warStatistics, currentWar, args.ignore_wars, service)
 performance = performance.reset_index(drop = True)
 performance.index += 1
