@@ -76,17 +76,20 @@ def get_war_statistics(clan_tag, members, api_token_path):
     war_statistics = {}
     for player_tag in members.keys():
         war_statistics[player_tag] = {}
+        
+    def handle_participants(race_id, participants):
+        for participant in participants:
+            player_tag = participant["tag"]
+            if player_tag in war_statistics:
+                war_statistics[player_tag][race_id] = int(participant["fame"])
 
     for river_race in river_races:
         river_race_id = f'{river_race["seasonId"]}.{river_race["sectionIndex"]}'
-        standings = river_race["standings"]
-        for standing in standings:
+        for standing in river_race["standings"]:
             clan = standing["clan"]
             if clan["tag"] == clan_tag:
-                for participant in clan["participants"]:
-                    player_tag = participant["tag"]
-                    if player_tag in war_statistics:
-                        war_statistics[player_tag][river_race_id] = int(participant["fame"])
+                handle_participants(river_race_id, clan["participants"])
+                
     print("Collection of river race statistics has finished.")
     return pd.DataFrame.from_dict(war_statistics, orient = "index")
 
