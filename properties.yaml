@@ -28,4 +28,4 @@ gsheetNames:
   rating: "PlayerRanking"
   excuses: "Abmeldungen"
 
-resultFile: "player-ranking.csv"
+ratingFile: "player-ranking.csv"

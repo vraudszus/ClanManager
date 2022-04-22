@@ -174,6 +174,9 @@ def main():
     valid_excuses = props["valid_excuses"]
     not_in_clan_excuse = valid_excuses["notInClanExcuse"]
     pro_demotion_requirements = props["promotion_demotion_requirements"]
+    rating_file = props["ratingFile"]
+    rating_gsheet = props["gsheetNames"]["rating"]
+    excuses_gsheet = props["gsheetNames"]["excuses"]
               
     check_coefficients(new_player_coefficient, rating_coefficients)
     print(f"Evaluating performance of players from {clan_tag}...")
@@ -193,11 +196,11 @@ def main():
     print(performance)
     print_pending_rank_changes(members, war_log, pro_demotion_requirements)
 
-    performance.to_csv("player-ranking.csv", sep = ";", float_format= "%.3f")
-    gsheeetsApiWrapper.write_player_ranking(performance, "PlayerRanking", service)
-    gsheeetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, "Abmeldungen", service)
+    performance.to_csv(rating_file, sep = ";", float_format= "%.3f")
+    gsheeetsApiWrapper.write_player_ranking(performance, rating_gsheet, service)
+    gsheeetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service)
 
-    input() # only to prevent console window from closing after execution
+    input() # to prevent console window from closing after execution
 
 if __name__ == "__main__":
     main()
