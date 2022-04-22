@@ -83,24 +83,28 @@ def ignore_selected_wars(currentWar, warLog, ignore_wars):
     return currentWar, warLog
 
 def accept_excuses(service, current_war, war_log, members):
+       
+    def handle_war(tag, name, war, fame):
+        excuse = excuses.at[name, war]
+        if not math.isnan(fame) and excuse in VALID_EXCUSES:
+            if (excuse == NOT_IN_CLAN_EXCUSE):
+                war_log.at[tag, war] = np.nan
+            else:
+                war_log.at[tag, war] = 1600 
+            print("Excuse accepted for", war, excuse, name)
+                
+    def handle_current_war(tag, name):
+        if excuses.at[name, "current"] in VALID_EXCUSES:
+            current_war.at[tag] = 1600 * warProgress
+            print("Excuse accepted for current CW:", excuses.at[name, "current"], name)
+    
     excuses = gsheeetsApiWrapper.get_excuses("Abmeldungen", service)
     for tag in members:
         name = members[tag]["name"]
         if name in excuses.index:
-            if excuses.at[name, "current"] in VALID_EXCUSES:
-                current_war.at[tag] = 1600 * warProgress
-                print("Excuse accepted for current CW:", excuses.at[name, "current"], name)
-                
-            wars = war_log.loc[tag]
-            for war, fame in wars.items():
-                excuse = excuses.at[name, war]
-                if not math.isnan(fame) and excuse in VALID_EXCUSES:
-                    if (excuse == NOT_IN_CLAN_EXCUSE):
-                        war_log.at[tag, war] = np.nan
-                    else:
-                        war_log.at[tag, war] = 1600 
-                    print("Excuse accepted for", war, excuse, name)
-                    
+            handle_current_war(tag, name)
+            for war, fame in war_log.loc[tag].items():
+                handle_war(tag, name, war, fame)
     return current_war, war_log   
 
 def evaluate_performance(members, ladder_stats, war_log, current_war, ignore_wars, service):
