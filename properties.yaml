@@ -34,3 +34,4 @@ gsheetNames:
   excuses: "Abmeldungen"
 
 ratingFile: "player-ranking.csv"
+ratingHistoryFile: "player-ranking-history.csv"

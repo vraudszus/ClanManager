@@ -160,9 +160,18 @@ def print_pending_rank_changes(members, war_log, requirements):
     if demotion_deserving_logs:
         print("Pending demotions for:", ', '.join(demotion_deserving_logs))
         
-def main():
-    args = CLI.parse_args()
-    
+def append_rating_history(rating_history_file, rating):
+    now = datetime.datetime.utcnow()
+    rating.rename(now.strftime("%d.%m.%Y %H:%M:%S"), inplace=True)
+    print(rating)
+    try:
+        rating_history = pd.read_csv(rating_history_file, sep=";", index_col=0)
+        rating_history = pd.concat([rating_history, rating], axis=1)
+    except FileNotFoundError: 
+        rating_history = rating.to_frame()
+    rating_history.to_csv(rating_history_file, sep = ";", float_format= "%.0f")     
+        
+def main(ignore_wars):   
     props = yaml.safe_load(open("properties.yaml", "r"))  
     clan_tag = props["clanTag"]
     cr_api_url = props["crApiUrl"]
@@ -175,6 +184,7 @@ def main():
     not_in_clan_excuse = valid_excuses["notInClanExcuse"]
     pro_demotion_requirements = props["promotion_demotion_requirements"]
     rating_file = props["ratingFile"]
+    rating_history_file = props["ratingHistoryFile"]
     rating_gsheet = props["gsheetNames"]["rating"]
     excuses_gsheet = props["gsheetNames"]["excuses"]
     gsheet_spreadsheet_id = props["gsheet_spreadsheet_id"]
@@ -189,9 +199,10 @@ def main():
     service = gsheeetsApiWrapper.connect_to_service(gsheet_credentials, gsheet_token)
     
     war_progress, rating_coefficients = adjust_war_weights(rating_coefficients)
-    current_war, war_log = ignore_selected_wars(current_war, war_log, args.ignore_wars)
+    current_war, war_log = ignore_selected_wars(current_war, war_log, ignore_wars)
     current_war, war_log = accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id)
     performance = evaluate_performance(members, ladder, war_log, current_war, rating_coefficients)
+    append_rating_history(rating_history_file, performance["rating"])
     performance = performance.reset_index(drop = True)
     performance.index += 1
     performance.loc["mean"] = performance.mean()
@@ -204,4 +215,5 @@ def main():
     gsheeetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service, gsheet_spreadsheet_id)
 
 if __name__ == "__main__":
-    main()
+    args = CLI.parse_args()
+    main(args.ignore_wars)
