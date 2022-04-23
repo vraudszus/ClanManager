@@ -202,15 +202,17 @@ def main(ignore_wars):
     current_war, war_log = ignore_selected_wars(current_war, war_log, ignore_wars)
     current_war, war_log = accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id)
     performance = evaluate_performance(members, ladder, war_log, current_war, rating_coefficients)
+    
     append_rating_history(rating_history_file, performance["rating"])
+    print_pending_rank_changes(members, war_log, pro_demotion_requirements)
+    
     performance = performance.reset_index(drop = True)
     performance.index += 1
     performance.loc["mean"] = performance.mean()
     performance.loc["median"] = performance.median()
-    print(performance)
-    print_pending_rank_changes(members, war_log, pro_demotion_requirements)
-
     performance.to_csv(rating_file, sep = ";", float_format= "%.0f")
+    print(performance)
+    
     gsheeetsApiWrapper.write_player_ranking(performance, rating_gsheet, service, gsheet_spreadsheet_id)
     gsheeetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service, gsheet_spreadsheet_id)
 
