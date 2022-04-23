@@ -94,6 +94,11 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
     current_max_fame = current_war.max()
     current_min_fame = current_war.min()
     current_fame_range = current_max_fame - current_min_fame
+    
+    cur_trophy_ranking = ladder["current_season_trophies"].sort_values(ascending=False)
+    for i, row in enumerate(cur_trophy_ranking.items()):
+        tag, _ = row
+        cur_trophy_ranking[tag] = i+1
 
     for player_tag in members.keys():
         current_best_trophies = ladder.at[player_tag, "current_season_best_trophies"]
@@ -120,6 +125,7 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
         members[player_tag]["current_war"] = current_war_rating * 1000
         members[player_tag]["war_history"] = war_log_rating * 1000
         members[player_tag]["avg_fame"] = war_log.at[player_tag, "mean"] if player_tag in war_log.index else np.nan
+        members[player_tag]["ladder_rank"] = cur_trophy_ranking[player_tag]
         
     performance = pd.DataFrame.from_dict(members, orient = "index")
     
