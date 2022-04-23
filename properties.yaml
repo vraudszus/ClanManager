@@ -18,9 +18,6 @@ ratingCoefficients:
   warHistoryCoefficient: 0.4
   currentWarCoefficient: 0.25
 
-# New player coefficient is used when a player does not appear in war log. Must be in interval [0, 1]
-newPlayerCoefficient: 0.5
-
 promotion_demotion_requirements:
   minFameForCountingWar: 2000
   minCountingWars: 8

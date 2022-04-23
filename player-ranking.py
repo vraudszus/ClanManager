@@ -15,13 +15,10 @@ CLI.add_argument(
   type = int,
 )
 
-def check_coefficients(new_player_coefficient, rating_coefficients):
+def check_coefficients(rating_coefficients):
     rating_coefficients_list = list(rating_coefficients.values())
     if sum(rating_coefficients_list) != 1.0 or min(rating_coefficients_list) < 0:
         print("Error: Rating coefficients do not sum up to 1.0 or are negative.")
-        exit()
-    if not 0 <= new_player_coefficient <= 1:
-        print("NewPlayerCoefficient must be between 0 and 1")
         exit()
 
 def adjust_war_weights(rating_coefficients):
@@ -60,16 +57,20 @@ def accept_excuses(service, current_war, war_log, members, valid_excuses, war_pr
     def handle_war(tag, name, war, fame):
         excuse = excuses.at[name, war]
         if not math.isnan(fame) and excuse in valid_excuses.values():
-            if (excuse == valid_excuses["notInClanExcuse"]):
+            if excuse == valid_excuses["notInClanExcuse"] or excuse == valid_excuses["newPlayerExcuse"]:
                 war_log.at[tag, war] = np.nan
             else:
                 war_log.at[tag, war] = 1600 
             print("Excuse accepted for", war, excuse, name)
                 
     def handle_current_war(tag, name):
-        if excuses.at[name, "current"] in valid_excuses.values():
-            current_war.at[tag] = 1600 * war_progress
-            print("Excuse accepted for current CW:", excuses.at[name, "current"], name)
+        excuse = excuses.at[name, "current"]
+        if excuse in valid_excuses.values():
+            if excuse == valid_excuses["newPlayerExcuse"]:
+                current_war.at[tag] = np.nan
+            else:
+                current_war.at[tag] = 1600 * war_progress
+            print("Excuse accepted for current CW:", excuse, name)
     
     for tag in members:
         name = members[tag]["name"]
@@ -79,7 +80,7 @@ def accept_excuses(service, current_war, war_log, members, valid_excuses, war_pr
                 handle_war(tag, name, war, fame)
     return current_war, war_log   
 
-def evaluate_performance(members, ladder, war_log, current_war, rating_coefficients, new_player_coefficient):
+def evaluate_performance(members, ladder, war_log, current_war, rating_coefficients):
     current_season_max_trophies = ladder["current_season_best_trophies"].max()
     current_season_min_trophies = ladder["current_season_best_trophies"].min()
     current_season_trophy_range = current_season_max_trophies - current_season_min_trophies
@@ -93,19 +94,14 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
     current_max_fame = current_war.max()
     current_min_fame = current_war.min()
     current_fame_range = current_max_fame - current_min_fame
-    new_player_war_log_mean = war_log_min_fame + war_history_fame_range * new_player_coefficient
 
     for player_tag in members.keys():
         current_best_trophies = ladder.at[player_tag, "current_season_best_trophies"]
         current_ladder_rating = (current_best_trophies - current_season_min_trophies) / current_season_trophy_range
         previous_best_trophies = ladder.at[player_tag, "previous_season_best_trophies"]
         previous_ladder_rating = (previous_best_trophies - previous_season_min_trophies) / previous_season_trophy_range
-        war_log_mean = war_log.at[player_tag, "mean"] if player_tag in war_log.index else new_player_war_log_mean
+        war_log_mean = war_log.at[player_tag, "mean"] if player_tag in war_log.index else None
         war_log_rating = (war_log_mean - war_log_min_fame) / war_history_fame_range
-        if player_tag in war_log.index:
-            war_log_mean_without_first_war = war_log.loc[player_tag].drop("mean").dropna()[:-1].mean()
-        else:
-            war_log_mean_without_first_war = None
         # player_tag is not present in current_war until a user has logged in after season reset
         current_fame = current_war[player_tag] if player_tag in current_war else 0
         if current_fame_range > 0:
@@ -124,11 +120,9 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
         members[player_tag]["current_war"] = current_war_rating
         members[player_tag]["war_history"] = war_log_rating
         members[player_tag]["avg_fame"] = int(war_log.at[player_tag, "mean"]) if player_tag in war_log.index else None
-        members[player_tag]["avg_fame[:-1]"] = war_log_mean_without_first_war
 
     performance = pd.DataFrame.from_dict(members, orient = "index")
     performance["avg_fame"] = np.floor(pd.to_numeric(performance["avg_fame"], errors='coerce')).astype('Int64')
-    performance["avg_fame[:-1]"] = np.floor(pd.to_numeric(performance["avg_fame[:-1]"], errors='coerce')).astype('Int64')
     print("Performance rating calculated according to the following formula:")
     print("rating =",
         "{:.2f}".format(rating_coefficients["currentLadderCoefficient"]), "* current_season +",
@@ -170,7 +164,6 @@ def main():
     cr_token = api_tokens["crApiTokenPath"]
     gsheet_credentials = api_tokens["gsheetsCredentialsPath"]
     gsheet_token = api_tokens["gsheetsTokenPath"]
-    new_player_coefficient = props["newPlayerCoefficient"]
     rating_coefficients = props["ratingCoefficients"]
     valid_excuses = props["valid_excuses"]
     not_in_clan_excuse = valid_excuses["notInClanExcuse"]
@@ -180,7 +173,7 @@ def main():
     excuses_gsheet = props["gsheetNames"]["excuses"]
     gsheet_spreadsheet_id = props["gsheet_spreadsheet_id"]
               
-    check_coefficients(new_player_coefficient, rating_coefficients)
+    check_coefficients(rating_coefficients)
     print(f"Evaluating performance of players from {clan_tag}...")
     members = crApiWrapper.get_current_members(clan_tag, cr_token, cr_api_url)
     war_log = crApiWrapper.get_war_statistics(clan_tag, members, cr_token, cr_api_url)
@@ -192,7 +185,7 @@ def main():
     war_progress, rating_coefficients = adjust_war_weights(rating_coefficients)
     current_war, war_log = ignore_selected_wars(current_war, war_log, args.ignore_wars)
     current_war, war_log = accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id)
-    performance = evaluate_performance(members, ladder, war_log, current_war, rating_coefficients, new_player_coefficient)
+    performance = evaluate_performance(members, ladder, war_log, current_war, rating_coefficients)
     performance = performance.reset_index(drop = True)
     performance.index += 1
     print(performance)
