@@ -42,7 +42,7 @@ def clear_sheet(sheet_name, service, spreadsheet_id):
 
 def write_player_ranking(df, sheet_name, service, spreadsheet_id):
     clear_sheet(sheet_name, service, spreadsheet_id)
-    csv_string = df.to_csv(sep = ";", float_format= "%.3f")
+    csv_string = df.to_csv(sep = ";", float_format= "%.0f")
     body = {
         'requests': [{
             'pasteData': {

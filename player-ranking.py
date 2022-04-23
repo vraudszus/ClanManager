@@ -114,15 +114,15 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
         members[player_tag]["rating"] = (rating_coefficients["currentLadderCoefficient"] * current_ladder_rating
                                         + rating_coefficients["previousLadderCoefficient"] * previous_ladder_rating
                                         + rating_coefficients["currentWarCoefficient"] * current_war_rating
-                                        + rating_coefficients["warHistoryCoefficient"] * war_log_rating)
-        members[player_tag]["current_season"] = current_ladder_rating
-        members[player_tag]["previous_season"] = previous_ladder_rating
-        members[player_tag]["current_war"] = current_war_rating
-        members[player_tag]["war_history"] = war_log_rating
-        members[player_tag]["avg_fame"] = int(war_log.at[player_tag, "mean"]) if player_tag in war_log.index else None
-
+                                        + rating_coefficients["warHistoryCoefficient"] * war_log_rating) * 1000
+        members[player_tag]["current_season"] = current_ladder_rating * 1000
+        members[player_tag]["previous_season"] = previous_ladder_rating * 1000
+        members[player_tag]["current_war"] = current_war_rating * 1000
+        members[player_tag]["war_history"] = war_log_rating * 1000
+        members[player_tag]["avg_fame"] = war_log.at[player_tag, "mean"] if player_tag in war_log.index else np.nan
+        
     performance = pd.DataFrame.from_dict(members, orient = "index")
-    performance["avg_fame"] = np.floor(pd.to_numeric(performance["avg_fame"], errors='coerce')).astype('Int64')
+    
     print("Performance rating calculated according to the following formula:")
     print("rating =",
         "{:.2f}".format(rating_coefficients["currentLadderCoefficient"]), "* current_season +",
@@ -191,7 +191,7 @@ def main():
     print(performance)
     print_pending_rank_changes(members, war_log, pro_demotion_requirements)
 
-    performance.to_csv(rating_file, sep = ";", float_format= "%.3f")
+    performance.to_csv(rating_file, sep = ";", float_format= "%.0f")
     gsheeetsApiWrapper.write_player_ranking(performance, rating_gsheet, service, gsheet_spreadsheet_id)
     gsheeetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service, gsheet_spreadsheet_id)
 
