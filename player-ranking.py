@@ -188,6 +188,8 @@ def main():
     performance = evaluate_performance(members, ladder, war_log, current_war, rating_coefficients)
     performance = performance.reset_index(drop = True)
     performance.index += 1
+    performance.loc["mean"] = performance.mean()
+    performance.loc["median"] = performance.median()
     print(performance)
     print_pending_rank_changes(members, war_log, pro_demotion_requirements)
 
