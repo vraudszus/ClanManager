@@ -170,7 +170,6 @@ def print_pending_rank_changes(members, war_log, requirements):
 def append_rating_history(rating_history_file, rating):
     now = datetime.datetime.utcnow()
     rating.rename(now.strftime("%d.%m.%Y %H:%M:%S"), inplace=True)
-    print(rating)
     try:
         rating_history = pd.read_csv(rating_history_file, sep=";", index_col=0)
         rating_history = pd.concat([rating_history, rating], axis=1)
@@ -215,8 +214,8 @@ def main(ignore_wars):
     
     performance = performance.reset_index(drop = True)
     performance.index += 1
-    performance.loc["mean"] = performance.mean()
-    performance.loc["median"] = performance.median()
+    performance.loc["mean"] = performance.iloc[:,2:].mean()
+    performance.loc["median"] = performance.iloc[:-1,2:].median()
     performance.to_csv(rating_file, sep = ";", float_format= "%.0f")
     print(performance)
     
