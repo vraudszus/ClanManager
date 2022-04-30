@@ -65,7 +65,7 @@ def get_excuses(sheet_name, service, spreadsheet_id):
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=sheet_name).execute()
     data = result.get('values', [])
     if len(data) > 0:
-        return pd.DataFrame(data[1:], columns=data[0]).set_index("")
+        return pd.DataFrame(data[1:], columns=data[0]).set_index("tag")
     else:
         return pd.DataFrame()
 
@@ -80,22 +80,20 @@ def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, shee
             return x
         
     current_war = current_war[members.keys()]
-    current_war.index = current_war.index.map(lambda x: members[x]["name"])
     current_war = current_war.apply(isnumber)
     cur_missing = old_df.index.difference(current_war.index)
     missing_series = pd.Series(index=cur_missing, dtype=str).fillna(not_in_clan_str)
     current_war = current_war.append(missing_series)
     
-    war_history = war_history.iloc[:, :10] # remove mean column
+    war_history = war_history.iloc[:, :-1] # remove mean column
     war_history = war_history.fillna(not_in_clan_str)
-    war_history.index = war_history.index.map(lambda x: members[x]["name"])
     war_history = war_history.applymap(isnumber)
     war_missing = old_df.index.difference(war_history.index)
     missing_df = pd.DataFrame(index=war_missing, columns=war_history.columns).fillna(not_in_clan_str)
     war_history = pd.concat([war_history, missing_df])
     
     try:
-        last_finished_cw = old_df.columns.values[1] # the column next to current
+        last_finished_cw = old_df.columns.values[2] # the column next to current
     except IndexError:
         last_finished_cw = -1
     new_df = None
@@ -117,11 +115,15 @@ def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, shee
             
         for tag in members:
             # add rows for new players
-            name = members[tag]["name"]
-            if name not in new_df.index:
-                new_df = new_df.append(pd.Series(name=name))
-            
-    new_df.sort_index(inplace=True)
+            if tag not in new_df.index:
+                new_df = new_df.append(pd.Series(name=tag))
+    
+    # add names
+    new_df.index.name = "tag"
+    if "name" not in new_df.columns:
+        tag_name_map = {k: v["name"] for k,v in members.items()}
+        new_df.insert(loc=0, column="name", value=pd.Series(tag_name_map))
+    new_df.sort_values(by="name", inplace=True)
     csv_string = new_df.to_csv(sep = ";")
     body = {
         'requests': [{
