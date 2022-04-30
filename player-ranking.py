@@ -54,31 +54,31 @@ def ignore_selected_wars(current_war, war_log, ignore_wars):
 def accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id):
     excuses = gsheeetsApiWrapper.get_excuses("Abmeldungen", service, gsheet_spreadsheet_id)
        
-    def handle_war(tag, name, war, fame):
-        excuse = excuses.at[name, war]
+    def handle_war(tag, war, fame):
+        excuse = excuses.at[tag, war]
         if not math.isnan(fame) and excuse in valid_excuses.values():
             if excuse == valid_excuses["notInClanExcuse"] or excuse == valid_excuses["newPlayerExcuse"]:
                 war_log.at[tag, war] = np.nan
             else:
                 war_log.at[tag, war] = 1600 
-            print("Excuse accepted for", war, excuse, name)
+            print("Excuse accepted for", war, excuse, members[tag]["name"])
                 
-    def handle_current_war(tag, name):
-        excuse = excuses.at[name, "current"]
+    def handle_current_war(tag):
+        excuse = excuses.at[tag, "current"]
         if excuse in valid_excuses.values():
             if excuse == valid_excuses["newPlayerExcuse"]:
                 current_war.at[tag] = np.nan
             else:
                 current_war.at[tag] = 1600 * war_progress
-            print("Excuse accepted for current CW:", excuse, name)
+            print("Excuse accepted for current CW:", excuse, members[tag]["name"])
     
     for tag in members:
-        name = members[tag]["name"]
-        if name in excuses.index:
-            handle_current_war(tag, name)
-            for war, fame in war_log.loc[tag].items():
-                if war in excuses.columns:
-                    handle_war(tag, name, war, fame)
+        if tag in excuses.index:
+            handle_current_war(tag)
+            if tag in war_log.index:
+                for war, fame in war_log.loc[tag].items():
+                    if war in excuses.columns:
+                        handle_war(tag, war, fame)
     return current_war, war_log   
 
 def evaluate_performance(members, ladder, war_log, current_war, rating_coefficients):
