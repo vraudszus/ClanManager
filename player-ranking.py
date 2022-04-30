@@ -120,7 +120,7 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
             # Does not affect the rating on those days
             current_war_rating = 1
 
-        if war_log_rating:
+        if war_log_rating is not None:
             members[player_tag]["rating"] = (rating_coefficients["currentLadderCoefficient"] * current_ladder_rating
                                             + rating_coefficients["previousLadderCoefficient"] * previous_ladder_rating
                                             + rating_coefficients["currentWarCoefficient"] * current_war_rating
@@ -130,7 +130,7 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
         members[player_tag]["current_season"] = current_ladder_rating * 1000
         members[player_tag]["previous_season"] = previous_ladder_rating * 1000
         members[player_tag]["current_war"] = current_war_rating * 1000
-        members[player_tag]["war_history"] = war_log_rating * 1000 if war_log_rating else None
+        members[player_tag]["war_history"] = war_log_rating * 1000 if war_log_rating is not None else None
         members[player_tag]["avg_fame"] = war_log.at[player_tag, "mean"] if player_tag in war_log.index else np.nan
         members[player_tag]["ladder_rank"] = cur_trophy_ranking[player_tag]
         
