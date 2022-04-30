@@ -77,7 +77,8 @@ def accept_excuses(service, current_war, war_log, members, valid_excuses, war_pr
         if name in excuses.index:
             handle_current_war(tag, name)
             for war, fame in war_log.loc[tag].items():
-                handle_war(tag, name, war, fame)
+                if war in excuses.columns:
+                    handle_war(tag, name, war, fame)
     return current_war, war_log   
 
 def evaluate_performance(members, ladder, war_log, current_war, rating_coefficients):
@@ -106,7 +107,10 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
         previous_best_trophies = ladder.at[player_tag, "previous_season_best_trophies"]
         previous_ladder_rating = (previous_best_trophies - previous_season_min_trophies) / previous_season_trophy_range
         war_log_mean = war_log.at[player_tag, "mean"] if player_tag in war_log.index else None
-        war_log_rating = (war_log_mean - war_log_min_fame) / war_history_fame_range
+        if war_log_mean:
+            war_log_rating = (war_log_mean - war_log_min_fame) / war_history_fame_range
+        else:
+            war_log_rating = None
         # player_tag is not present in current_war until a user has logged in after season reset
         current_fame = current_war[player_tag] if player_tag in current_war else 0
         if current_fame_range > 0:
@@ -116,14 +120,17 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
             # Does not affect the rating on those days
             current_war_rating = 1
 
-        members[player_tag]["rating"] = (rating_coefficients["currentLadderCoefficient"] * current_ladder_rating
-                                        + rating_coefficients["previousLadderCoefficient"] * previous_ladder_rating
-                                        + rating_coefficients["currentWarCoefficient"] * current_war_rating
-                                        + rating_coefficients["warHistoryCoefficient"] * war_log_rating) * 1000
+        if war_log_rating:
+            members[player_tag]["rating"] = (rating_coefficients["currentLadderCoefficient"] * current_ladder_rating
+                                            + rating_coefficients["previousLadderCoefficient"] * previous_ladder_rating
+                                            + rating_coefficients["currentWarCoefficient"] * current_war_rating
+                                            + rating_coefficients["warHistoryCoefficient"] * war_log_rating) * 1000
+        else:
+            members[player_tag]["rating"] = None
         members[player_tag]["current_season"] = current_ladder_rating * 1000
         members[player_tag]["previous_season"] = previous_ladder_rating * 1000
         members[player_tag]["current_war"] = current_war_rating * 1000
-        members[player_tag]["war_history"] = war_log_rating * 1000
+        members[player_tag]["war_history"] = war_log_rating * 1000 if war_log_rating else None
         members[player_tag]["avg_fame"] = war_log.at[player_tag, "mean"] if player_tag in war_log.index else np.nan
         members[player_tag]["ladder_rank"] = cur_trophy_ranking[player_tag]
         
