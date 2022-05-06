@@ -58,9 +58,9 @@ def accept_excuses(service, current_war, war_log, members, valid_excuses, war_pr
         excuse = excuses.at[tag, war]
         if not math.isnan(fame) and excuse in valid_excuses.values():
             if excuse == valid_excuses["notInClanExcuse"] or excuse == valid_excuses["newPlayerExcuse"]:
-                war_log.at[tag, war] = np.nan
+                war_log.loc[tag, war] = np.nan
             else:
-                war_log.at[tag, war] = 1600 
+                war_log.loc[tag, war] = 1600 
             print("Excuse accepted for", war, excuse, members[tag]["name"])
                 
     def handle_current_war(tag):
