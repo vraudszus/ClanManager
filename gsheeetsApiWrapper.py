@@ -104,7 +104,7 @@ def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, shee
     else:
         columns_to_shift = war_history.columns.tolist().index(last_finished_cw)
         if columns_to_shift >= 1:
-            new_df = pd.concat([current_war, war_history.iloc[:, :columns_to_shift-1], old_df], axis=1)
+            new_df = pd.concat([current_war, war_history.iloc[:, :columns_to_shift-1], old_df[:,1:]], axis=1)
             new_df = new_df.rename(columns={"current": war_history.columns.tolist()[columns_to_shift-1]})
             new_df = new_df.rename(columns={0: "current"})
             new_df = new_df.drop(new_df[new_df.eq(not_in_clan_str).sum(1) >= 11].index)
