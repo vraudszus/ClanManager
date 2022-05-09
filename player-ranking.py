@@ -219,8 +219,9 @@ def main(ignore_wars):
     performance.to_csv(rating_file, sep = ";", float_format= "%.0f")
     print(performance)
     
-    gsheeetsApiWrapper.write_player_ranking(performance, rating_gsheet, service, gsheet_spreadsheet_id)
+    gsheeetsApiWrapper.write_df_to_sheet(performance, rating_gsheet, gsheet_spreadsheet_id, service)
     gsheeetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service, gsheet_spreadsheet_id)
+    input()
 
 if __name__ == "__main__":
     args = CLI.parse_args()

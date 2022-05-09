@@ -40,7 +40,7 @@ def clear_sheet(sheet_name, service, spreadsheet_id):
     request = service.spreadsheets().values().clear(spreadsheetId=spreadsheet_id, range=sheet_name)
     return request.execute()
 
-def write_player_ranking(df, sheet_name, service, spreadsheet_id):
+def write_df_to_sheet(df, sheet_name, spreadsheet_id, service):
     clear_sheet(sheet_name, service, spreadsheet_id)
     csv_string = df.to_csv(sep = ";", float_format= "%.0f")
     body = {
@@ -71,7 +71,6 @@ def get_excuses(sheet_name, service, spreadsheet_id):
 
 def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, sheet_name, service, spreadsheet_id):
     old_df = get_excuses(sheet_name, service, spreadsheet_id)
-    clear_sheet(sheet_name, service, spreadsheet_id)
     def isnumber(x):
         try:
             float(x)
@@ -96,7 +95,7 @@ def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, shee
         last_finished_cw = old_df.columns.values[2] # the column next to current
     except IndexError:
         last_finished_cw = -1
-    new_df = None
+    
     if last_finished_cw not in war_history.columns.tolist():
         new_df = pd.concat([current_war, war_history], axis=1)
         new_df = new_df.rename(columns={0: "current"})
@@ -124,21 +123,4 @@ def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, shee
         tag_name_map = {k: v["name"] for k,v in members.items()}
         new_df.insert(loc=0, column="name", value=pd.Series(tag_name_map))
     new_df.sort_values(by="name", inplace=True)
-    csv_string = new_df.to_csv(sep = ";")
-    body = {
-        'requests': [{
-            'pasteData': {
-                "coordinate": {
-                    "sheetId": get_sheet_by_name(sheet_name, service, spreadsheet_id),
-                    "rowIndex": "0",
-                    "columnIndex": "0",
-                },
-                "data": csv_string,
-                "type": 'PASTE_NORMAL',
-                "delimiter": ';',
-            }
-        }]
-    }
-    request = service.spreadsheets().batchUpdate(spreadsheetId=spreadsheet_id, body=body)
-    response = request.execute()
-    return response
+    return write_df_to_sheet(new_df, sheet_name, spreadsheet_id, service)
