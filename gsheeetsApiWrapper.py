@@ -70,57 +70,57 @@ def get_excuses(sheet_name, service, spreadsheet_id):
         return pd.DataFrame()
 
 def update_excuse_sheet(members, current_war, war_history, not_in_clan_str, sheet_name, service, spreadsheet_id):
-    old_df = get_excuses(sheet_name, service, spreadsheet_id)
-    def isnumber(x):
+    excuses = get_excuses(sheet_name, service, spreadsheet_id)
+    
+    def empty_cells_with_numbers(x):
         try:
             float(x)
             return np.nan
         except ValueError:
             return x
-        
-    current_war = current_war[members.keys()]
-    current_war = current_war.apply(isnumber)
-    cur_missing = old_df.index.difference(current_war.index)
-    missing_series = pd.Series(index=cur_missing, dtype=str).fillna(not_in_clan_str)
-    current_war = current_war.append(missing_series)
     
-    war_history = war_history.iloc[:, :-1] # remove mean column
-    war_history = war_history.fillna(not_in_clan_str)
-    war_history = war_history.applymap(isnumber)
-    war_missing = old_df.index.difference(war_history.index)
-    missing_df = pd.DataFrame(index=war_missing, columns=war_history.columns).fillna(not_in_clan_str)
-    war_history = pd.concat([war_history, missing_df])
+    current_war = current_war[members.keys()]
+    wars = war_history.copy()
+    wars.drop(columns="mean", inplace=True)
+    wars.insert(0, "current", current_war)
+    wars.fillna(not_in_clan_str, inplace=True)
+    wars = wars.applymap(empty_cells_with_numbers)
+    missing = excuses.index.difference(wars.index)
+    missing_df = pd.DataFrame(index=missing, columns=wars.columns).fillna(not_in_clan_str)
+    wars = pd.concat([wars, missing_df])
     
     try:
-        last_finished_cw = old_df.columns.values[2] # the column next to current
+        last_recorded_cw = excuses.columns.values[2] # the column next to current
     except IndexError:
-        last_finished_cw = -1
+        last_recorded_cw = -1
     
-    if last_finished_cw not in war_history.columns.tolist():
-        new_df = pd.concat([current_war, war_history], axis=1)
-        new_df = new_df.rename(columns={0: "current"})
+    if last_recorded_cw not in war_history.columns.tolist():
         print("Write complety new", sheet_name)
+        excuses = wars
     else:
-        columns_to_shift = war_history.columns.tolist().index(last_finished_cw)
-        if columns_to_shift >= 1:
-            new_df = pd.concat([current_war, war_history.iloc[:, :columns_to_shift-1], old_df[:,1:]], axis=1)
-            new_df = new_df.rename(columns={"current": war_history.columns.tolist()[columns_to_shift-1]})
-            new_df = new_df.rename(columns={0: "current"})
-            new_df = new_df.drop(new_df[new_df.eq(not_in_clan_str).sum(1) >= 11].index)
+        columns_to_shift = war_history.columns.tolist().index(last_recorded_cw)
+        if columns_to_shift > 0:
             print("Shift existing", sheet_name, "by", columns_to_shift, "columns")
+            excuses = pd.concat([excuses.iloc[:,:1], wars.iloc[:, :columns_to_shift], excuses.iloc[:,1:-columns_to_shift]], axis=1)
+            excuses.columns = wars.columns.insert(0,"name")
+            tags_to_remove = excuses[excuses.eq(not_in_clan_str).sum(1) >= 11].index
+            if not tags_to_remove.empty:
+                print(", ".join(tags_to_remove.tolist()), "removed from", sheet_name)
+                excuses.drop(tags_to_remove, inplace=True)
         else:
-            new_df = old_df
             print("Restore old", sheet_name)
-            
-        for tag in members:
-            # add rows for new players
-            if tag not in new_df.index:
-                new_df = new_df.append(pd.Series(name=tag))
+            for tag in members:
+                # add rows for new players
+                if tag not in excuses.index:
+                    excuses = excuses.append(pd.Series(name=tag))
     
     # add names
-    new_df.index.name = "tag"
-    if "name" not in new_df.columns:
+    excuses.index.name = "tag"
+    if "name" not in excuses.columns:
         tag_name_map = {k: v["name"] for k,v in members.items()}
-        new_df.insert(loc=0, column="name", value=pd.Series(tag_name_map))
-    new_df.sort_values(by="name", inplace=True)
-    return write_df_to_sheet(new_df, sheet_name, spreadsheet_id, service)
+        excuses.insert(loc=0, column="name", value=pd.Series(tag_name_map))
+    for tag, _ in excuses[excuses["name"].isna()].iterrows():
+        if tag in members:
+            excuses.at[tag,"name"] = members[tag]["name"]
+    excuses.sort_values(by="name", inplace=True)
+    return write_df_to_sheet(excuses, sheet_name, spreadsheet_id, service)

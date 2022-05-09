@@ -8,3 +8,5 @@ credentials.json
 token.json
 
 player-ranking-history.csv
+
+__pycache__/
