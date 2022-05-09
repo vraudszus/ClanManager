@@ -18,6 +18,9 @@ ratingCoefficients:
   warHistoryCoefficient: 0.4
   currentWarCoefficient: 0.25
 
+# must be between 0 and 1000
+newPlayerWarLogRating: 500
+
 promotion_demotion_requirements:
   minFameForCountingWar: 2000
   minCountingWars: 8

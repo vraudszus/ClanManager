@@ -81,7 +81,7 @@ def accept_excuses(service, current_war, war_log, members, valid_excuses, war_pr
                         handle_war(tag, war, fame)
     return current_war, war_log   
 
-def evaluate_performance(members, ladder, war_log, current_war, rating_coefficients):
+def evaluate_performance(members, ladder, war_log, current_war, rating_coefficients, new_player_war_log_rating):
     current_season_max_trophies = ladder["current_season_best_trophies"].max()
     current_season_min_trophies = ladder["current_season_best_trophies"].min()
     current_season_trophy_range = current_season_max_trophies - current_season_min_trophies
@@ -107,7 +107,8 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
         previous_best_trophies = ladder.at[player_tag, "previous_season_best_trophies"]
         previous_ladder_rating = (previous_best_trophies - previous_season_min_trophies) / previous_season_trophy_range
         war_log_mean = war_log.at[player_tag, "mean"] if player_tag in war_log.index else None
-        if war_log_mean:
+        
+        if not np.isnan(war_log_mean):
             war_log_rating = (war_log_mean - war_log_min_fame) / war_history_fame_range
         else:
             war_log_rating = None
@@ -119,20 +120,22 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
             # Default value that is used during trainings days.
             # Does not affect the rating on those days
             current_war_rating = 1
-
-        if war_log_rating is not None:
-            members[player_tag]["rating"] = (rating_coefficients["currentLadderCoefficient"] * current_ladder_rating
-                                            + rating_coefficients["previousLadderCoefficient"] * previous_ladder_rating
-                                            + rating_coefficients["currentWarCoefficient"] * current_war_rating
-                                            + rating_coefficients["warHistoryCoefficient"] * war_log_rating) * 1000
-        else:
-            members[player_tag]["rating"] = None
+            
+        members[player_tag]["rating"] = -1
         members[player_tag]["current_season"] = current_ladder_rating * 1000
         members[player_tag]["previous_season"] = previous_ladder_rating * 1000
         members[player_tag]["current_war"] = current_war_rating * 1000
         members[player_tag]["war_history"] = war_log_rating * 1000 if war_log_rating is not None else None
-        members[player_tag]["avg_fame"] = war_log.at[player_tag, "mean"] if player_tag in war_log.index else np.nan
+        members[player_tag]["avg_fame"] = war_log.at[player_tag, "mean"] if player_tag in war_log.index else None
         members[player_tag]["ladder_rank"] = cur_trophy_ranking[player_tag]
+
+        members[player_tag]["rating"] = (rating_coefficients["currentLadderCoefficient"]   * members[player_tag]["current_season"]
+                                        + rating_coefficients["previousLadderCoefficient"] * members[player_tag]["previous_season"]
+                                        + rating_coefficients["currentWarCoefficient"]     * members[player_tag]["current_war"])
+        if members[player_tag]["war_history"] is not None:
+            members[player_tag]["rating"] += rating_coefficients["warHistoryCoefficient"] * members[player_tag]["war_history"]
+        else:
+            members[player_tag]["rating"] += rating_coefficients["warHistoryCoefficient"] * new_player_war_log_rating
         
     performance = pd.DataFrame.from_dict(members, orient = "index")
     
@@ -186,6 +189,7 @@ def main(ignore_wars):
     gsheet_credentials = api_tokens["gsheetsCredentialsPath"]
     gsheet_token = api_tokens["gsheetsTokenPath"]
     rating_coefficients = props["ratingCoefficients"]
+    new_player_war_log_rating = props["newPlayerWarLogRating"]
     valid_excuses = props["valid_excuses"]
     not_in_clan_excuse = valid_excuses["notInClanExcuse"]
     pro_demotion_requirements = props["promotion_demotion_requirements"]
@@ -207,7 +211,7 @@ def main(ignore_wars):
     war_progress, rating_coefficients = adjust_war_weights(rating_coefficients)
     current_war, war_log = ignore_selected_wars(current_war, war_log, ignore_wars)
     current_war, war_log = accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id)
-    performance = evaluate_performance(members, ladder, war_log, current_war, rating_coefficients)
+    performance = evaluate_performance(members, ladder, war_log, current_war, rating_coefficients, new_player_war_log_rating)
     
     append_rating_history(rating_history_file, performance["rating"])
     print_pending_rank_changes(members, war_log, pro_demotion_requirements)
