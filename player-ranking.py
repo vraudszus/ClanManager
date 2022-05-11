@@ -108,7 +108,7 @@ def evaluate_performance(members, ladder, war_log, current_war, rating_coefficie
         previous_ladder_rating = (previous_best_trophies - previous_season_min_trophies) / previous_season_trophy_range
         war_log_mean = war_log.at[player_tag, "mean"] if player_tag in war_log.index else None
         
-        if not np.isnan(war_log_mean):
+        if not pd.isnull(war_log_mean):
             war_log_rating = (war_log_mean - war_log_min_fame) / war_history_fame_range
         else:
             war_log_rating = None
