@@ -7,6 +7,23 @@
 - Evaluation can take real life events into account
 - Takes input from and outputs to a Google sheet that you can share with your clan
 
+## Example Output (manually shortened and anonymized)
+
+|        | name     | role     | rating | current_season | previous_season | current_war | war_history | avg_fame | ladder_rank |
+|--------|----------|----------|--------|----------------|-----------------|-------------|-------------|----------|-------------|
+| 1     | player1 | member   | 429    | 791            | 740             | 1000        | 241         | 2400     | 5           |
+| 2     | player2 | elder    | 420    | 931            | 952             | 1000        | 141         | 2255     | 4           |
+| 3     | player3 | elder    | 409    | 203            | 515             | 1000        | 472         | 2735     | 36          |
+| 4     | player4 | elder    | 408    | 178            | 427             | 1000        | 493         | 2765     | 45          |
+| 5     | player5 | elder    | 408    | 330            | 495             | 1000        | 424         | 2665     | 34          |
+| 6     | player6 | elder    | 400    | 203            | 476             | 1000        | 464         | 2722     | 41          |
+| 7     | player7 | elder    | 399    | 162            | 427             | 1000        | 486         | 2755     | 40          |
+| 8     | player8 | coLeader | 370    | 291            | 465             | 1000        | 386         | 2610     | 25          |
+| 9     | player9 | elder    | 367    | 347            | 476             | 1000        | 359         | 2570     | 18          |
+| 10     | player10 | elder    | 338    | 447            | 498             | 1000        | 272         | 2445     | 19          |
+| mean   |          |          | 405    | 396            | 563             | 1000        | 384         | 2607     | 26          |
+| median |          |          | 400    | 341            | 510             | 1000        | 378         | 2598     | 26          |
+
 ## Prerequisites
 
 - Python 3.x must be installed.
