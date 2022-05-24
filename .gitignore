@@ -10,3 +10,5 @@ token.json
 player-ranking-history.csv
 
 __pycache__/
+
+gSpreadsheetId.txt

@@ -5,7 +5,7 @@ import numpy as np
 import math
 import yaml
 
-import gsheeetsApiWrapper
+import gsheetsApiWrapper
 import crApiWrapper
 
 CLI = argparse.ArgumentParser()
@@ -52,7 +52,7 @@ def ignore_selected_wars(current_war, war_log, ignore_wars):
     return current_war, war_log
 
 def accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id):
-    excuses = gsheeetsApiWrapper.get_excuses("Abmeldungen", service, gsheet_spreadsheet_id)
+    excuses = gsheetsApiWrapper.get_excuses("Abmeldungen", service, gsheet_spreadsheet_id)
        
     def handle_war(tag, war, fame):
         excuse = excuses.at[tag, war]
@@ -184,10 +184,9 @@ def main(ignore_wars):
     props = yaml.safe_load(open("properties.yaml", "r"))  
     clan_tag = props["clanTag"]
     cr_api_url = props["crApiUrl"]
-    api_tokens = props["apiTokens"]
-    cr_token = api_tokens["crApiTokenPath"]
-    gsheet_credentials = api_tokens["gsheetsCredentialsPath"]
-    gsheet_token = api_tokens["gsheetsTokenPath"]
+    cr_token = props["apiTokens"]["crApiTokenPath"]
+    gsheet_credentials = props["apiTokens"]["gsheetsCredentialsPath"]
+    gsheet_token = props["apiTokens"]["gsheetsTokenPath"]
     rating_coefficients = props["ratingCoefficients"]
     new_player_war_log_rating = props["newPlayerWarLogRating"]
     valid_excuses = props["valid_excuses"]
@@ -195,9 +194,9 @@ def main(ignore_wars):
     pro_demotion_requirements = props["promotion_demotion_requirements"]
     rating_file = props["ratingFile"]
     rating_history_file = props["ratingHistoryFile"]
-    rating_gsheet = props["gsheetNames"]["rating"]
-    excuses_gsheet = props["gsheetNames"]["excuses"]
-    gsheet_spreadsheet_id = props["gsheet_spreadsheet_id"]
+    rating_gsheet = props["googleSheets"]["rating"]
+    excuses_gsheet = props["googleSheets"]["excuses"]
+    gsheet_spreadsheet_id = open(props["googleSheets"]["spreadsheetIdPath"], "r").read()
               
     check_coefficients(rating_coefficients)
     print(f"Evaluating performance of players from {clan_tag}...")
@@ -206,7 +205,7 @@ def main(ignore_wars):
     current_war = crApiWrapper.get_current_river_race(clan_tag, cr_token, cr_api_url)
     ladder = crApiWrapper.get_ladder_statistics(members, cr_token, cr_api_url)
 
-    service = gsheeetsApiWrapper.connect_to_service(gsheet_credentials, gsheet_token)
+    service = gsheetsApiWrapper.connect_to_service(gsheet_credentials, gsheet_token)
     
     war_progress, rating_coefficients = adjust_war_weights(rating_coefficients)
     current_war, war_log = ignore_selected_wars(current_war, war_log, ignore_wars)
@@ -223,8 +222,8 @@ def main(ignore_wars):
     performance.to_csv(rating_file, sep = ";", float_format= "%.0f")
     print(performance)
     
-    gsheeetsApiWrapper.write_df_to_sheet(performance, rating_gsheet, gsheet_spreadsheet_id, service)
-    gsheeetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service, gsheet_spreadsheet_id)
+    gsheetsApiWrapper.write_df_to_sheet(performance, rating_gsheet, gsheet_spreadsheet_id, service)
+    gsheetsApiWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service, gsheet_spreadsheet_id)
     input()
 
 if __name__ == "__main__":
