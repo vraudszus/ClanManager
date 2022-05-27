@@ -40,6 +40,8 @@
 
 ## Usage
 
+First, make sure to update the value of `clanTag` in `properties.yaml` and customize the rating settings to your liking.
+
     Example usage:
         python player-ranking.py 
         python player-ranking.py --ignore_wars -1
