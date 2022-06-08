@@ -7,6 +7,7 @@ import yaml
 
 import gsheetsApiWrapper
 import crApiWrapper
+import historyWrapper
 
 CLI = argparse.ArgumentParser()
 CLI.add_argument(
@@ -168,17 +169,7 @@ def print_pending_rank_changes(members, war_log, requirements):
     demotion_deserving_logs = demotion_deserving_logs[demotion_deserving_logs.index.isin(only_elders.keys())]
     demotion_deserving_logs = list(demotion_deserving_logs.index.map(lambda k: only_elders[k]))
     if demotion_deserving_logs:
-        print("Pending demotions for:", ', '.join(demotion_deserving_logs))
-        
-def append_rating_history(rating_history_file, rating):
-    now = datetime.datetime.utcnow()
-    rating.rename(now.strftime("%d.%m.%Y %H:%M:%S"), inplace=True)
-    try:
-        rating_history = pd.read_csv(rating_history_file, sep=";", index_col=0)
-        rating_history = pd.concat([rating_history, rating], axis=1)
-    except FileNotFoundError: 
-        rating_history = rating.to_frame()
-    rating_history.to_csv(rating_history_file, sep = ";", float_format= "%.0f")     
+        print("Pending demotions for:", ', '.join(demotion_deserving_logs))     
         
 def main(ignore_wars):   
     props = yaml.safe_load(open("properties.yaml", "r"))  
@@ -194,6 +185,7 @@ def main(ignore_wars):
     pro_demotion_requirements = props["promotion_demotion_requirements"]
     rating_file = props["ratingFile"]
     rating_history_file = props["ratingHistoryFile"]
+    rating_history_image = props["ratingHistoryImage"]
     rating_gsheet = props["googleSheets"]["rating"]
     excuses_gsheet = props["googleSheets"]["excuses"]
     gsheet_spreadsheet_id = open(props["googleSheets"]["spreadsheetIdPath"], "r").read()
@@ -212,7 +204,8 @@ def main(ignore_wars):
     current_war, war_log = accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id)
     performance = evaluate_performance(members, ladder, war_log, current_war, rating_coefficients, new_player_war_log_rating)
     
-    append_rating_history(rating_history_file, performance["rating"])
+    historyWrapper.append_rating_history(rating_history_file, performance["rating"])
+    historyWrapper.plot_rating_history(rating_history_file, members, rating_history_image)
     print_pending_rank_changes(members, war_log, pro_demotion_requirements)
     
     performance = performance.reset_index(drop = True)
