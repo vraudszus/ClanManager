@@ -1,6 +1,7 @@
 import os.path
 import pandas as pd
 import numpy as np
+import itertools
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -64,6 +65,8 @@ def write_df_to_sheet(df, sheet_name, spreadsheet_id, service):
 def get_excuses(sheet_name, service, spreadsheet_id):                        
     result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id, range=sheet_name).execute()
     data = result.get('values', [])
+    # pad short rows to prevent mismatch between column header count and data columns
+    data = list(zip(*itertools.zip_longest(*data)))
     if len(data) > 0:
         return pd.DataFrame(data[1:], columns=data[0]).set_index("tag")
     else:
