@@ -1,4 +1,4 @@
-# The best ClanManager for Supercell's game Clash Royale
+# The best ClanManager for Supercell's Clash Royale
 
 - Get detailed insights in the performance of your clan members
 - Who performs well? And who doesn't?
