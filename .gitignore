@@ -16,3 +16,5 @@ gSpreadsheetId.txt
 player-ranking-history.png
 
 .vscode/
+
+venv/
