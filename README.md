@@ -43,7 +43,14 @@
 First, make sure to update the value of `clanTag` in `properties.yaml` and customize the rating settings to your liking.
 
     Example usage:
-        python -m player-ranking.py  
+        python -m playerRanking
+        python -m playerRanking -p
+        python -m playerRanking --plot
+
+    Options:
+        -p --plot
+        Use this flag to enable plotting of the rating history. 
+        The resulting image will be saved to the path specified in the properties.
 
 ## Evaluation criteria customization
 
