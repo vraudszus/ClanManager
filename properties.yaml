@@ -13,10 +13,10 @@ apiTokens:
 
 ratingCoefficients:
   # must sum up to 1.0 and values must be >= 0
-  currentLadderCoefficient: 0.25
-  previousLadderCoefficient: 0.1
-  warHistoryCoefficient: 0.4
-  currentWarCoefficient: 0.25
+  currentLadder: 0.25
+  previousLadder: 0.1
+  warHistory: 0.4
+  currentWar: 0.25
 
 # must be between 0 and 1000
 newPlayerWarLogRating: 500
