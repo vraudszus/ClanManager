@@ -1,20 +1,12 @@
 import pandas as pd
 import datetime
-import argparse
 import numpy as np
 import math
 import yaml
 
-import gsheetsApiWrapper
-import crApiWrapper
-import historyWrapper
-
-CLI = argparse.ArgumentParser()
-CLI.add_argument(
-    "--ignore_wars",
-    nargs="*",
-    type=int,
-)
+from playerRanking import gsheetsApiWrapper
+from playerRanking import crApiWrapper
+from playerRanking import historyWrapper
 
 
 def check_coefficients(rating_coefficients):
@@ -50,14 +42,18 @@ def adjust_war_weights(rating_coefficients):
     return (war_progress, rating_coefficients)
 
 
-def ignore_selected_wars(current_war, war_log, ignore_wars):
-    if ignore_wars:
-        for value in ignore_wars:
-            if value == 0:
-                current_war.values[:] = 0
-            else:
-                war_log.iloc[:, -value-1] = np.nan
-    return current_war, war_log
+def ignoreSelectedWars(currentWar: pd.Series, warLog: pd.DataFrame, ignoreWars: list[str]):
+    ignoredWarsInHistory = list(set(ignoreWars) & set(warLog.columns))
+    warLog.loc[:, ignoredWarsInHistory] = np.nan
+    if ignoreWars and max([float(i) for i in ignoreWars]) > float(warLog.columns[0]):
+        currentWar.values[:] = 0
+    return currentWar, warLog
+
+
+def accountForShorterWars(warLog: pd.DataFrame, threeDayWars: list[str]):
+    shorterWarsInHistory = list(set(threeDayWars) & set(warLog.columns))
+    warLog.loc[:, shorterWarsInHistory] *= 4/3
+    return warLog
 
 
 def accept_excuses(service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id):
@@ -210,7 +206,7 @@ def print_pending_rank_changes(members, war_log, requirements):
         print("Pending demotions for:", ', '.join(demotion_deserving_logs))
 
 
-def main(ignore_wars):
+def perform_evaluation():
     props = yaml.safe_load(open("properties.yaml", "r"))
     clan_tag = props["clanTag"]
     cr_api_url = props["crApiUrl"]
@@ -229,6 +225,8 @@ def main(ignore_wars):
     excuses_gsheet = props["googleSheets"]["excuses"]
     gsheet_spreadsheet_id = open(
         props["googleSheets"]["spreadsheetIdPath"], "r").read()
+    ignoreWars = props["ignoreWars"]
+    threeDayWars = props["threeDayWars"]
 
     check_coefficients(rating_coefficients)
     print(f"Evaluating performance of players from {clan_tag}...")
@@ -243,8 +241,9 @@ def main(ignore_wars):
         gsheet_credentials, gsheet_token)
 
     war_progress, rating_coefficients = adjust_war_weights(rating_coefficients)
-    current_war, war_log = ignore_selected_wars(
-        current_war, war_log, ignore_wars)
+    war_log = accountForShorterWars(war_log, threeDayWars)
+    current_war, war_log = ignoreSelectedWars(
+        current_war, war_log, ignoreWars)
     current_war, war_log = accept_excuses(
         service, current_war, war_log, members, valid_excuses, war_progress, gsheet_spreadsheet_id)
     performance = evaluate_performance(
@@ -267,9 +266,3 @@ def main(ignore_wars):
         performance, rating_gsheet, gsheet_spreadsheet_id, service)
     gsheetsApiWrapper.update_excuse_sheet(
         members, current_war, war_log, not_in_clan_excuse, excuses_gsheet, service, gsheet_spreadsheet_id)
-    input()
-
-
-if __name__ == "__main__":
-    args = CLI.parse_args()
-    main(args.ignore_wars)

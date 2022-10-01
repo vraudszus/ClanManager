@@ -40,7 +40,7 @@ def get_ladder_statistics(members, api_token_path, base_url):
     print(f"Fetching ladder statistics for all {len(members)} members...")
     ladder_statistics = {}
     for i, player_tag in enumerate(members.keys()):
-        print(f"Handling player {i} out of {len(members)}.", end="\r")
+        print(f"Handling player {i+1} out of {len(members)}.", end="\r")
         api_call = f"/players/%23{player_tag[1:]}"
         response = requests.get(base_url + api_call, headers=prepare_headers(api_token_path))
         handle_html_status_code(response.status_code, response.text)
