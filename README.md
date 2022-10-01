@@ -43,15 +43,7 @@
 First, make sure to update the value of `clanTag` in `properties.yaml` and customize the rating settings to your liking.
 
     Example usage:
-        python player-ranking.py 
-        python player-ranking.py --ignore_wars -1
-        python player-ranking.py --ignore_wars -4 -5 -7
-    
-    Options:
-        --ignore_wars           followed by a number of integers in the range [-1, -10]
-        Ignore completed river races during the rating computation. 
-        Parameter "-n" describes the n-th last completed river race. 
-        E.g. -1 describes the river race from last week.    
+        python -m player-ranking.py  
 
 ## Evaluation criteria customization
 
@@ -61,6 +53,6 @@ Using the `properties.yaml` file you can customize:
 - The weights the rating should apply to different metrics
 - The promotion and demotion suggestion criteria
 - The different excuses the rating should take into account
+- The wars you want to ignore during ranking
 - The paths of the API token files
 - The names of the output Google Sheet, tables, and files
-

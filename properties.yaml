@@ -45,3 +45,7 @@ googleSheets:
 ratingFile: "player-ranking.csv"
 ratingHistoryFile: "player-ranking-history.csv"
 ratingHistoryImage: "player-ranking-history.png"
+
+ignoreWars: []
+
+threeDayWars: []
