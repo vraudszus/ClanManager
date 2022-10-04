@@ -94,7 +94,11 @@ class GSheetsWrapper:
             except ValueError:
                 return x
 
-        current_war = current_war[members.keys()]
+        goodKeys = current_war.index.intersection(members.keys())
+        # goodKeys is needed as some members do not show up in current_war
+        # at season begin when not logging in some time after the end the previous war
+        current_war = current_war[goodKeys]
+
         wars = war_history.copy()
         wars.drop(columns="mean", inplace=True)
         wars.insert(0, "current", current_war)
