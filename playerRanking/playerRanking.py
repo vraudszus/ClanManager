@@ -100,3 +100,4 @@ def perform_evaluation(plot: bool):
     gSheetsWrapper.write_df_to_sheet(performance, rating_gsheet)
     gSheetsWrapper.update_excuse_sheet(
         members, current_war, war_log, not_in_clan_excuse, excuses_gsheet)
+    input()  # keep cli window open
