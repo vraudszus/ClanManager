@@ -93,7 +93,9 @@ class GSheetsWrapper:
                 return np.nan
             except ValueError:
                 return x
-
+        missingFromCurrentWar = pd.Index(members.keys()).difference(current_war.index)
+        if not missingFromCurrentWar.empty:
+            print("Missing from current war:", missingFromCurrentWar)
         goodKeys = current_war.index.intersection(members.keys())
         # goodKeys is needed as some members do not show up in current_war
         # at season begin when not logging in some time after the end the previous war
