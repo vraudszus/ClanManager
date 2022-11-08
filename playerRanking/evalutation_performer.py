@@ -6,12 +6,10 @@ import math
 
 class EvaluationPerformer:
 
-    def __init__(self, members: dict, currentWar: pd.Series, warLog: pd.DataFrame,
-                 ladder: pd.DataFrame) -> None:
+    def __init__(self, members: dict, currentWar: pd.Series, warLog: pd.DataFrame) -> None:
         self.members = members
         self.currentWar = currentWar
         self.warLog = warLog
-        self.ladder = ladder
         self.warProgress = None
         self.ratingCoefficients = None
 
@@ -81,12 +79,9 @@ class EvaluationPerformer:
                             handle_war(tag, war, fame)
 
     def evaluate_performance(self, new_player_warLog_rating):
-        current_season_max_trophies = self.ladder["current_season_best_trophies"].max()
-        current_season_min_trophies = self.ladder["current_season_best_trophies"].min()
-        current_season_trophy_range = current_season_max_trophies - current_season_min_trophies
-        previous_season_max_trophies = self.ladder["previous_season_best_trophies"].max()
-        previous_season_min_trophies = self.ladder["previous_season_best_trophies"].min()
-        previous_season_trophy_range = previous_season_max_trophies - previous_season_min_trophies
+        max_trophies = max([info["trophies"] for _, info in self.members.items()])
+        min_trophies = min([info["trophies"] for _, info in self.members.items()])
+        trophy_range = max_trophies - min_trophies
         self.warLog["mean"] = self.warLog.mean(axis=1)
         warLog_max_fame = self.warLog["mean"].max()
         warLog_min_fame = self.warLog["mean"].min()
@@ -95,18 +90,9 @@ class EvaluationPerformer:
         current_min_fame = self.currentWar.min()
         current_fame_range = current_max_fame - current_min_fame
 
-        cur_trophy_ranking = self.ladder["current_season_trophies"].sort_values(ascending=False)
-        for i, row in enumerate(cur_trophy_ranking.items()):
-            tag, _ = row
-            cur_trophy_ranking[tag] = i+1
-
         for player_tag in self.members.keys():
-            current_best_trophies = self.ladder.at[player_tag, "current_season_best_trophies"]
-            current_ladder_rating = ((current_best_trophies - current_season_min_trophies)
-                                     / current_season_trophy_range)
-            previous_best_trophies = self.ladder.at[player_tag, "previous_season_best_trophies"]
-            previous_ladder_rating = ((previous_best_trophies - previous_season_min_trophies)
-                                      / previous_season_trophy_range)
+            trophies = self.members[player_tag]["trophies"]
+            ladder_rating = ((trophies - min_trophies) / trophy_range)
             warLog_mean = (self.warLog.at[player_tag, "mean"]
                            if player_tag in self.warLog.index else None)
 
@@ -125,19 +111,15 @@ class EvaluationPerformer:
                 current_war_rating = 1
 
             self.members[player_tag]["rating"] = -1
-            self.members[player_tag]["current_season"] = current_ladder_rating * 1000
-            self.members[player_tag]["previous_season"] = previous_ladder_rating * 1000
+            self.members[player_tag]["ladder"] = ladder_rating * 1000
             self.members[player_tag]["current_war"] = current_war_rating * 1000
             self.members[player_tag]["war_history"] = (warLog_rating * 1000
                                                        if warLog_rating is not None else None)
             self.members[player_tag]["avg_fame"] = (self.warLog.at[player_tag, "mean"]
                                                     if player_tag in self.warLog.index else None)
-            self.members[player_tag]["ladder_rank"] = cur_trophy_ranking[player_tag]
 
-            self.members[player_tag]["rating"] = (self.ratingCoefficients["currentLadder"]
-                                                  * self.members[player_tag]["current_season"]
-                                                  + self.ratingCoefficients["previousLadder"]
-                                                  * self.members[player_tag]["previous_season"]
+            self.members[player_tag]["rating"] = (self.ratingCoefficients["ladder"]
+                                                  * self.members[player_tag]["ladder"]
                                                   + self.ratingCoefficients["currentWar"]
                                                   * self.members[player_tag]["current_war"])
             if self.members[player_tag]["war_history"] is not None:
@@ -148,11 +130,12 @@ class EvaluationPerformer:
                                                        * new_player_warLog_rating)
 
         performance = pd.DataFrame.from_dict(self.members, orient="index")
+        performance = performance[["name", "rating", "ladder", "current_war",
+                                   "war_history", "avg_fame", "ladderRank"]]
 
         print("Performance rating calculated according to the following formula:")
         print("rating =",
-              "{:.2f}".format(self.ratingCoefficients["currentLadder"]), "* current_season +",
-              "{:.2f}".format(self.ratingCoefficients["previousLadder"]), "* previous_season +",
+              "{:.2f}".format(self.ratingCoefficients["ladder"]), "* ladder +",
               "{:.2f}".format(self.ratingCoefficients["currentWar"]), "* current_war +",
               "{:.2f}".format(self.ratingCoefficients["warHistory"]), "* war_history")
         return performance.sort_values("rating", ascending=False)

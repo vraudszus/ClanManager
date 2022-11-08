@@ -13,8 +13,7 @@ apiTokens:
 
 ratingCoefficients:
   # must sum up to 1.0 and values must be >= 0
-  currentLadder: 0.25
-  previousLadder: 0.1
+  ladder: 0.35
   warHistory: 0.4
   currentWar: 0.25
 

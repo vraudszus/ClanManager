@@ -137,7 +137,7 @@ class GSheetsWrapper:
                 for tag in members:
                     # add rows for new players
                     if tag not in excuses.index:
-                        excuses = pd.concat([excuses, pd.Series(name=tag)])
+                        excuses = excuses.append(pd.Series(name=tag))
 
         # add names
         excuses.index.name = "tag"

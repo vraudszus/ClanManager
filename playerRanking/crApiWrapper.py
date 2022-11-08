@@ -30,41 +30,12 @@ def get_current_members(clan_tag, api_token_path, base_url):
         info = {
             "name": member["name"],
             "role": member["role"],
+            "trophies": member["trophies"],
+            "ladderRank": member["clanRank"],
         }
         members[member["tag"]] = info
     print(f"{len(members)} current members have been found.")
     return members
-
-
-def get_ladder_statistics(members, api_token_path, base_url):
-    print(f"Fetching ladder statistics for all {len(members)} members...")
-    ladder_statistics = {}
-    for i, player_tag in enumerate(members.keys()):
-        print(f"Handling player {i+1} out of {len(members)}.", end="\r")
-        api_call = f"/players/%23{player_tag[1:]}"
-        response = requests.get(base_url + api_call, headers=prepare_headers(api_token_path))
-        handle_html_status_code(response.status_code, response.text)
-        league_statistics = json.loads(response.text)["leagueStatistics"]
-
-        if "previousSeason" in league_statistics:
-            current_season = league_statistics["currentSeason"]
-            previous_season = league_statistics["previousSeason"]
-        else:
-            # handle case when a user has not yet logged in after season reset
-            current_season = {"trophies": 5001}  # TODO check how this works for non-league players
-            previous_season = league_statistics["currentSeason"]
-
-        best_season = league_statistics["bestSeason"]
-        cur_best_trophies = current_season.get("bestTrophies", current_season["trophies"])
-        ladder_statistics[player_tag] = {
-            "current_season_best_trophies": cur_best_trophies,
-            "current_season_trophies": current_season["trophies"],
-            "previous_season_best_trophies": previous_season.get("bestTrophies"),
-            "previous_season_trophies": previous_season.get("trophies"),
-            "best_season_trophies": best_season["trophies"],
-        }
-    print("Collection of ladder statistics has finished.")
-    return pd.DataFrame.from_dict(ladder_statistics, orient="index")
 
 
 def get_war_statistics(clan_tag, members, api_token_path, base_url):
