@@ -31,7 +31,7 @@ def get_current_members(clan_tag, api_token_path, base_url):
             "name": member["name"],
             "role": member["role"],
             "trophies": member["trophies"],
-            "ladderRank": member["clanRank"],
+            "clanRank": member["clanRank"],
         }
         members[member["tag"]] = info
     print(f"{len(members)} current members have been found.")

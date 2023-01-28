@@ -79,9 +79,7 @@ class EvaluationPerformer:
                             handle_war(tag, war, fame)
 
     def evaluate_performance(self, new_player_warLog_rating):
-        max_trophies = max([info["trophies"] for _, info in self.members.items()])
-        min_trophies = min([info["trophies"] for _, info in self.members.items()])
-        trophy_range = max_trophies - min_trophies
+        lowest_clan_rank = len(self.members)
         self.warLog["mean"] = self.warLog.mean(axis=1)
         warLog_max_fame = self.warLog["mean"].max()
         warLog_min_fame = self.warLog["mean"].min()
@@ -91,8 +89,8 @@ class EvaluationPerformer:
         current_fame_range = current_max_fame - current_min_fame
 
         for player_tag in self.members.keys():
-            trophies = self.members[player_tag]["trophies"]
-            ladder_rating = ((trophies - min_trophies) / trophy_range)
+            clanRank = self.members[player_tag]["clanRank"]
+            ladder_rating = 1 - ((clanRank - 1) / (lowest_clan_rank - 1))
             warLog_mean = (self.warLog.at[player_tag, "mean"]
                            if player_tag in self.warLog.index else None)
 
@@ -131,7 +129,7 @@ class EvaluationPerformer:
 
         performance = pd.DataFrame.from_dict(self.members, orient="index")
         performance = performance[["name", "rating", "ladder", "current_war",
-                                   "war_history", "avg_fame", "ladderRank"]]
+                                   "war_history", "avg_fame", "clanRank"]]
 
         print("Performance rating calculated according to the following formula:")
         print("rating =",
