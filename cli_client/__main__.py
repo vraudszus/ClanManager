@@ -1,5 +1,5 @@
 import argparse
-from playerRanking import playerRanking
+from src import playerRanking
 
 ARGUMENT_PARSER = argparse.ArgumentParser()
 ARGUMENT_PARSER.add_argument("-p", "--plot",

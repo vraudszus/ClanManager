@@ -21,7 +21,7 @@ ratingCoefficients:
 newPlayerWarLogRating: 500
 
 promotion_demotion_requirements:
-  minFameForCountingWar: 2300
+  minFameForCountingWar: 2700
   minCountingWars: 8
 
 valid_excuses:

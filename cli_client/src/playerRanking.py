@@ -1,9 +1,9 @@
 import yaml
 
-from playerRanking.evalutation_performer import EvaluationPerformer
-from playerRanking.gsheetsApiWrapper import GSheetsWrapper
-from playerRanking import crApiWrapper
-from playerRanking import historyWrapper
+from src.evalutation_performer import EvaluationPerformer
+from src.gsheetsApiWrapper import GSheetsWrapper
+from src import crApiWrapper
+from src import historyWrapper
 
 
 def check_coefficients(rating_coefficients):
