@@ -64,7 +64,7 @@ def get_war_statistics(clan_tag, members, api_token_path, base_url):
 
     print("Collection of river race statistics has finished.")
     df = pd.DataFrame.from_dict(war_statistics, orient="index")
-    return df.sort_index(axis=1, ascending=False)
+    return df.sort_index(axis=1, ascending=False, key=lambda x: x.astype(float))
 
 
 def get_current_river_race(clan_tag, api_token_path, base_url):
