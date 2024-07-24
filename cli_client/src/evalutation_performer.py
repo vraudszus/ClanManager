@@ -80,7 +80,6 @@ class EvaluationPerformer:
                             handle_war(tag, war, fame)
 
     def evaluate_performance(self, new_player_warLog_rating):
-        lowest_clan_rank = len(self.members)
         self.warLog["mean"] = self.warLog.mean(axis=1)
         warLog_max_fame = self.warLog["mean"].max()
         warLog_min_fame = self.warLog["mean"].min()
@@ -99,10 +98,16 @@ class EvaluationPerformer:
         previous_trophies_max = self.path["previous_season_trophies"].max()
         current_trophies_min = self.path.loc[self.path["current_season_league_number"] == 10, "current_season_trophies"].min()
         current_thropies_max = self.path["current_season_trophies"].max()
+        
+        members_df = pd.DataFrame.from_dict(self.members, orient="index")
+        trophies_min = members_df["trophies"].min()
+        trophies_max = members_df["trophies"].max()
 
         for player_tag in self.members.keys():
-            clanRank = self.members[player_tag]["clanRank"]
-            ladder_rating = 1 - ((clanRank - 1) / (lowest_clan_rank - 1))
+            ladder_rating = (
+                (self.members[player_tag]["trophies"] - trophies_min) / 
+                (trophies_max - trophies_min)
+            )
             
             previous_league = self.path.at[player_tag, "previous_season_league_number"]
             previous_league_rating = (
@@ -183,7 +188,7 @@ class EvaluationPerformer:
         performance = pd.DataFrame.from_dict(self.members, orient="index")
         performance = performance[["name", "rating", "ladder", "current_war",
                                    "war_history", "avg_fame",
-                                   "current_season", "previous_season", "clanRank"]]
+                                   "current_season", "previous_season"]]
 
         print("Performance rating calculated according to the following formula:")
         print("rating =",
