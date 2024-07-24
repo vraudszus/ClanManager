@@ -80,3 +80,25 @@ def get_current_river_race(clan_tag, api_token_path, base_url):
         current_war_statistics[player_tag] = int(participant["fame"])
     print("Handling of current river race has finished.")
     return pd.Series(current_war_statistics)
+
+def get_path_statistics(members, api_token_path, base_url):
+    print(f"Fetching path of legends statistics for all {len(members)} members...")
+    path_statistics = {}
+    for i, player_tag in enumerate(members.keys()):
+        print(f"Handling player {i+1} out of {len(members)}.", end="\r")
+        api_call = f"/players/%23{player_tag[1:]}"
+        response = requests.get(base_url + api_call, headers=prepare_headers(api_token_path))
+        handle_html_status_code(response.status_code, response.text)
+        player = json.loads(response.text)
+
+        current_season = player["currentPathOfLegendSeasonResult"]
+        previous_season = player["lastPathOfLegendSeasonResult"]
+
+        path_statistics[player_tag] = {
+            "current_season_league_number": current_season["leagueNumber"],
+            "current_season_trophies": current_season["trophies"],
+            "previous_season_league_number": previous_season["leagueNumber"],
+            "previous_season_trophies": previous_season["trophies"],
+        }
+    print("Collection of path of legends statistics has finished.")
+    return pd.DataFrame.from_dict(path_statistics, orient="index")

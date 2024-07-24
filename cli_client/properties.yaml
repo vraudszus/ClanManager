@@ -13,9 +13,13 @@ apiTokens:
 
 ratingCoefficients:
   # must sum up to 1.0 and values must be >= 0
-  ladder: 0.35
+  ladder: 0.075
   warHistory: 0.4
   currentWar: 0.25
+  previousSeasonLeague: 0.0375
+  previousSeasonTrophies: 0.0375
+  currentSeasonLeague: 0.1
+  currentSeasonTrophies: 0.1
 
 # must be between 0 and 1000
 newPlayerWarLogRating: 500
@@ -54,3 +58,5 @@ threeDayWars:
   - "88.2"
   - "97.0"
   - "97.2"
+  - "101.2"
+  - "106.2"

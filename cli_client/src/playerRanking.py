@@ -72,11 +72,12 @@ def perform_evaluation(plot: bool):
         clan_tag, members, cr_token, cr_api_url)
     current_war = crApiWrapper.get_current_river_race(
         clan_tag, cr_token, cr_api_url)
+    path = crApiWrapper.get_path_statistics(members, cr_token, cr_api_url)
 
     gSheetsWrapper = GSheetsWrapper(gsheet_credentials, gsheet_token, spreadsheet_id_path)
     excusesDf = gSheetsWrapper.get_excuses(excuses_gsheet)
 
-    evaluationPerformer = EvaluationPerformer(members, current_war, war_log)
+    evaluationPerformer = EvaluationPerformer(members, current_war, war_log, path)
     evaluationPerformer.adjust_war_weights(rating_coefficients)
     evaluationPerformer.account_for_shorter_wars(threeDayWars)
     evaluationPerformer.ignore_selected_wars(ignoreWars)

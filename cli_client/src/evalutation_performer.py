@@ -6,10 +6,11 @@ import math
 
 class EvaluationPerformer:
 
-    def __init__(self, members: dict, currentWar: pd.Series, warLog: pd.DataFrame) -> None:
+    def __init__(self, members: dict, currentWar: pd.Series, warLog: pd.DataFrame, path: pd.DataFrame) -> None:
         self.members = members
         self.currentWar = currentWar
         self.warLog = warLog
+        self.path = path
         self.warProgress = None
         self.ratingCoefficients = None
 
@@ -87,10 +88,47 @@ class EvaluationPerformer:
         current_max_fame = self.currentWar.max()
         current_min_fame = self.currentWar.min()
         current_fame_range = current_max_fame - current_min_fame
+        
+        previous_league_min = self.path["previous_season_league_number"].min()
+        previous_league_max = self.path["previous_season_league_number"].max()
+        current_league_min = self.path["current_season_league_number"].min()
+        current_league_max = self.path["current_season_league_number"].max()
+        
+        # only count league 10 players for throphy min, otherwise it will always be 0
+        previous_trophies_min = self.path.loc[self.path["previous_season_league_number"] == 10, "previous_season_trophies"].min()
+        previous_trophies_max = self.path["previous_season_trophies"].max()
+        current_trophies_min = self.path.loc[self.path["current_season_league_number"] == 10, "current_season_trophies"].min()
+        current_thropies_max = self.path["current_season_trophies"].max()
 
         for player_tag in self.members.keys():
             clanRank = self.members[player_tag]["clanRank"]
             ladder_rating = 1 - ((clanRank - 1) / (lowest_clan_rank - 1))
+            
+            previous_league = self.path.at[player_tag, "previous_season_league_number"]
+            previous_league_rating = (
+                (previous_league - previous_league_min) / 
+                (previous_league_max - previous_league_min)
+            )
+            current_league = self.path.at[player_tag, "current_season_league_number"]
+            current_league_rating = (
+                (current_league - current_league_min) / 
+                (current_league_max - current_league_min)
+            )
+            
+            # only grant points to players in league 10
+            previous_trophies_rating = 0
+            if previous_league == 10:
+                previous_trophies_rating = (
+                    (self.path.at[player_tag, "previous_season_trophies"] - previous_trophies_min) / 
+                    (previous_trophies_max - previous_trophies_min)
+                )
+            current_trophies_rating = 0
+            if current_league == 10:
+                current_trophies_rating = (
+                    (self.path.at[player_tag, "current_season_trophies"] - current_trophies_min) / 
+                    (current_thropies_max - current_trophies_min)
+                )
+            
             warLog_mean = (self.warLog.at[player_tag, "mean"]
                            if player_tag in self.warLog.index else None)
 
@@ -115,11 +153,26 @@ class EvaluationPerformer:
                                                        if warLog_rating is not None else None)
             self.members[player_tag]["avg_fame"] = (self.warLog.at[player_tag, "mean"]
                                                     if player_tag in self.warLog.index else None)
+            self.members[player_tag]["previous_league"] = previous_league_rating * 1000
+            self.members[player_tag]["current_league"] = current_league_rating * 1000
+            self.members[player_tag]["previous_trophies"] = previous_trophies_rating * 1000
+            self.members[player_tag]["current_trophies"] = current_trophies_rating * 1000
+            
+            self.members[player_tag]["current_season"] = self.members[player_tag]["current_league"] + self.members[player_tag]["current_trophies"]
+            self.members[player_tag]["previous_season"] = self.members[player_tag]["previous_league"] + self.members[player_tag]["previous_trophies"]
 
             self.members[player_tag]["rating"] = (self.ratingCoefficients["ladder"]
                                                   * self.members[player_tag]["ladder"]
                                                   + self.ratingCoefficients["currentWar"]
-                                                  * self.members[player_tag]["current_war"])
+                                                  * self.members[player_tag]["current_war"]
+                                                  + self.ratingCoefficients["previousSeasonLeague"]
+                                                  * self.members[player_tag]["previous_league"]
+                                                  + self.ratingCoefficients["currentSeasonLeague"]
+                                                  * self.members[player_tag]["current_league"]
+                                                  + self.ratingCoefficients["previousSeasonTrophies"]
+                                                  * self.members[player_tag]["previous_trophies"]
+                                                  + self.ratingCoefficients["currentSeasonTrophies"]
+                                                  * self.members[player_tag]["current_trophies"])
             if self.members[player_tag]["war_history"] is not None:
                 self.members[player_tag]["rating"] += (self.ratingCoefficients["warHistory"]
                                                        * self.members[player_tag]["war_history"])
@@ -129,7 +182,8 @@ class EvaluationPerformer:
 
         performance = pd.DataFrame.from_dict(self.members, orient="index")
         performance = performance[["name", "rating", "ladder", "current_war",
-                                   "war_history", "avg_fame", "clanRank"]]
+                                   "war_history", "avg_fame",
+                                   "current_season", "previous_season", "clanRank"]]
 
         print("Performance rating calculated according to the following formula:")
         print("rating =",
