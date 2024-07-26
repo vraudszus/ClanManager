@@ -9,20 +9,13 @@ def prepare_headers(api_token_path):
     return headers
 
 
-def handle_html_status_code(status_code, response_text):
-    if status_code != 200:
-        print("Error: Request failed with status code", status_code)
-        print(response_text)
-        exit()
-
-
 def get_current_members(clan_tag, api_token_path, base_url):
     print("Building list of current members...")
     api_call = f"/clans/%23{clan_tag[1:]}"
     response = requests.get(
         base_url + api_call, headers=prepare_headers(api_token_path)
     )
-    handle_html_status_code(response.status_code, response.text)
+    response.raise_for_status()
     member_list = json.loads(response.text)["memberList"]
     members = {}
     for member in member_list:
@@ -42,7 +35,7 @@ def get_war_statistics(clan_tag, members, api_token_path, base_url):
     response = requests.get(
         base_url + api_call, headers=prepare_headers(api_token_path)
     )
-    handle_html_status_code(response.status_code, response.text)
+    response.raise_for_status()
     river_races = json.loads(response.text)["items"]
 
     war_statistics = {}
@@ -73,7 +66,7 @@ def get_current_river_race(clan_tag, api_token_path, base_url):
     response = requests.get(
         base_url + api_call, headers=prepare_headers(api_token_path)
     )
-    handle_html_status_code(response.status_code, response.text)
+    response.raise_for_status()
     clan = json.loads(response.text)["clan"]
 
     current_war_statistics = {}
@@ -93,7 +86,7 @@ def get_path_statistics(members, api_token_path, base_url):
         response = requests.get(
             base_url + api_call, headers=prepare_headers(api_token_path)
         )
-        handle_html_status_code(response.status_code, response.text)
+        response.raise_for_status()
         player = json.loads(response.text)
 
         current_season = player["currentPathOfLegendSeasonResult"]
