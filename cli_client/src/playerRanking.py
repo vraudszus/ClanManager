@@ -48,7 +48,6 @@ def print_pending_rank_changes(members, war_log, requirements):
 def perform_evaluation(plot: bool):
     props = yaml.safe_load(open("properties.yaml", "r"))
     clan_tag = props["clanTag"]
-    cr_api_url = props["crApiUrl"]
     cr_token = props["apiTokens"]["crApiTokenPath"]
     gsheet_credentials = props["apiTokens"]["gsheetsCredentialsPath"]
     gsheet_token = props["apiTokens"]["gsheetsTokenPath"]
@@ -67,10 +66,10 @@ def perform_evaluation(plot: bool):
     threeDayWars = props["threeDayWars"]
 
     print(f"Evaluating performance of players from {clan_tag}...")
-    members = crApiWrapper.get_current_members(clan_tag, cr_token, cr_api_url)
-    war_log = crApiWrapper.get_war_statistics(clan_tag, members, cr_token, cr_api_url)
-    current_war = crApiWrapper.get_current_river_race(clan_tag, cr_token, cr_api_url)
-    path = crApiWrapper.get_path_statistics(members, cr_token, cr_api_url)
+    members = crApiWrapper.get_current_members(clan_tag, cr_token)
+    war_log = crApiWrapper.get_war_statistics(clan_tag, members, cr_token)
+    current_war = crApiWrapper.get_current_river_race(clan_tag, cr_token)
+    path = crApiWrapper.get_path_statistics(members, cr_token)
 
     gSheetsWrapper = GSheetsWrapper(
         gsheet_credentials, gsheet_token, spreadsheet_id_path

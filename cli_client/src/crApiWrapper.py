@@ -1,22 +1,16 @@
 import requests
-import json
 import pandas as pd
 
+# URL of the proxy provided by RoyaleAPI.com
+# Alternatively you can use the official URL "https://api.clashroyale.com/v1"
+# Dynamic IPs don't work with the official URL as the IP must be whitelisted
+API_ENDPOINT: str = "https://proxy.royaleapi.dev/v1"
 
-def prepare_headers(api_token_path):
-    api_token = open(api_token_path, "r").read()
-    headers = {"Accept": "application/json", "authorization": f"Bearer {api_token}"}
-    return headers
 
-
-def get_current_members(clan_tag, api_token_path, base_url):
+def get_current_members(clan_tag, api_token_path):
     print("Building list of current members...")
-    api_call = f"/clans/%23{clan_tag[1:]}"
-    response = requests.get(
-        base_url + api_call, headers=prepare_headers(api_token_path)
-    )
-    response.raise_for_status()
-    member_list = json.loads(response.text)["memberList"]
+    path = f"/clans/%23{clan_tag[1:]}"
+    member_list = _get_json_from_api(path, api_token_path)["memberList"]
     members = {}
     for member in member_list:
         info = {
@@ -29,14 +23,10 @@ def get_current_members(clan_tag, api_token_path, base_url):
     return members
 
 
-def get_war_statistics(clan_tag, members, api_token_path, base_url):
+def get_war_statistics(clan_tag, members, api_token_path):
     print("Fetching river race statistics...")
-    api_call = f"/clans/%23{clan_tag[1:]}/riverracelog"
-    response = requests.get(
-        base_url + api_call, headers=prepare_headers(api_token_path)
-    )
-    response.raise_for_status()
-    river_races = json.loads(response.text)["items"]
+    path = f"/clans/%23{clan_tag[1:]}/riverracelog"
+    river_races = _get_json_from_api(path, api_token_path)["items"]
 
     war_statistics = {}
     for player_tag in members.keys():
@@ -60,14 +50,10 @@ def get_war_statistics(clan_tag, members, api_token_path, base_url):
     return df.sort_index(axis=1, ascending=False, key=lambda x: x.astype(float))
 
 
-def get_current_river_race(clan_tag, api_token_path, base_url):
+def get_current_river_race(clan_tag, api_token_path):
     print("Fetching current river race...")
-    api_call = f"/clans/%23{clan_tag[1:]}/currentriverrace"
-    response = requests.get(
-        base_url + api_call, headers=prepare_headers(api_token_path)
-    )
-    response.raise_for_status()
-    clan = json.loads(response.text)["clan"]
+    path = f"/clans/%23{clan_tag[1:]}/currentriverrace"
+    clan = _get_json_from_api(path, api_token_path)["clan"]
 
     current_war_statistics = {}
     for participant in clan["participants"]:
@@ -77,17 +63,12 @@ def get_current_river_race(clan_tag, api_token_path, base_url):
     return pd.Series(current_war_statistics)
 
 
-def get_path_statistics(members, api_token_path, base_url):
+def get_path_statistics(members, api_token_path):
     print(f"Fetching path of legends statistics for all {len(members)} members...")
     path_statistics = {}
     for i, player_tag in enumerate(members.keys()):
         print(f"Handling player {i+1} out of {len(members)}.", end="\r")
-        api_call = f"/players/%23{player_tag[1:]}"
-        response = requests.get(
-            base_url + api_call, headers=prepare_headers(api_token_path)
-        )
-        response.raise_for_status()
-        player = json.loads(response.text)
+        player = _get_json_from_api(f"/players/%23{player_tag[1:]}", api_token_path)
 
         current_season = player["currentPathOfLegendSeasonResult"]
         previous_season = player["lastPathOfLegendSeasonResult"]
@@ -100,3 +81,11 @@ def get_path_statistics(members, api_token_path, base_url):
         }
     print("Collection of path of legends statistics has finished.")
     return pd.DataFrame.from_dict(path_statistics, orient="index")
+
+
+def _get_json_from_api(path: str, api_token_path: str):
+    api_token = open(api_token_path, "r").read()
+    headers = {"Accept": "application/json", "authorization": f"Bearer {api_token}"}
+    response = requests.get(API_ENDPOINT + path, headers=headers)
+    response.raise_for_status()
+    return response.json()
