@@ -1,7 +1,14 @@
+from datetime import date, datetime, timedelta, timezone
+from typing import Dict
 import pandas as pd
-import datetime
 import numpy as np
 import math
+
+from src.datetime_util import (
+    get_next_first_monday_10_AM,
+    get_previous_first_monday_10_AM,
+    get_time_since_last_thursday_10_Am,
+)
 
 
 class EvaluationPerformer:
@@ -11,44 +18,59 @@ class EvaluationPerformer:
         currentWar: pd.Series,
         warLog: pd.DataFrame,
         path: pd.DataFrame,
+        rating_coefficients: Dict[str, float],
     ) -> None:
         self.members = members
         self.currentWar = currentWar
         self.warLog = warLog
         self.path = path
         self.warProgress = None
-        self.ratingCoefficients = None
+        self.weights = rating_coefficients
 
-    def adjust_war_weights(self, rating_coefficients):
-        now = datetime.datetime.utcnow()
-        seconds_since_midnight = (
-            now - now.replace(hour=10, minute=0, second=0, microsecond=0)
-        ).total_seconds()
-        offset = (now.weekday() - 3) % 7
-        # Find datetime for last Thursday 10:00 am UTC (roughly the begin of the war days)
-        begin_of_war_days = now - datetime.timedelta(
-            days=offset, seconds=seconds_since_midnight
-        )
-        time_since_start = now - begin_of_war_days
-        if time_since_start > datetime.timedelta(days=4):
+    def adjust_war_weights(self):
+        now = datetime.now(timezone.utc)
+        time_since_start = get_time_since_last_thursday_10_Am(now)
+        if time_since_start > timedelta(days=4):
             # Training days are currently happening, do not count current war
             war_progress = 0
-            rating_coefficients["warHistory"] += rating_coefficients["currentWar"]
-            rating_coefficients["currentWar"] = 0
+            self.weights["warHistory"] += self.weights["currentWar"]
+            self.weights["currentWar"] = 0
         else:
             # War days are currently happening
             # Linearly increase weight for current war
-            war_progress = time_since_start / datetime.timedelta(
-                days=4
-            )  # ranges from 0 to 1
-            rating_coefficients["warHistory"] += rating_coefficients["currentWar"] * (
+            war_progress = time_since_start / timedelta(days=4)  # ranges from 0 to 1
+            self.weights["warHistory"] += self.weights["currentWar"] * (
                 1 - war_progress
             )
-            rating_coefficients["currentWar"] *= war_progress
+            self.weights["currentWar"] *= war_progress
 
         print("War progress:", war_progress)
         self.warProgress = war_progress
-        self.ratingCoefficients = rating_coefficients
+
+    def adjust_season_weights(self) -> None:
+        now: datetime = datetime.now(timezone.utc)
+        today: date = now.date()
+
+        # the season ends at 10AM UTC on the first Monday of a month
+        current_season_start: datetime = get_previous_first_monday_10_AM(today)
+        current_season_end: datetime = get_next_first_monday_10_AM(current_season_start)
+
+        season_progress: float = (now - current_season_start) / (
+            current_season_end - current_season_start
+        )
+        print(f"Season progress: {season_progress}")
+
+        redistibuted_season_weight = (
+            self.weights["currentSeasonLeague"] * season_progress
+        )
+        self.weights["currentSeasonLeague"] -= redistibuted_season_weight
+        self.weights["previousSeasonLeague"] += redistibuted_season_weight
+
+        redistibuted_trophy_weight = (
+            self.weights["currentSeasonTrophies"] * season_progress
+        )
+        self.weights["currentSeasonTrophies"] -= redistibuted_trophy_weight
+        self.weights["previousSeasonTrophies"] += redistibuted_trophy_weight
 
     def ignore_selected_wars(self, ignoreWars: list[str]):
         ignoredWarsInHistory = list(set(ignoreWars) & set(self.warLog.columns))
@@ -203,26 +225,24 @@ class EvaluationPerformer:
             )
 
             self.members[player_tag]["rating"] = (
-                self.ratingCoefficients["ladder"] * self.members[player_tag]["ladder"]
-                + self.ratingCoefficients["currentWar"]
-                * self.members[player_tag]["current_war"]
-                + self.ratingCoefficients["previousSeasonLeague"]
+                self.weights["ladder"] * self.members[player_tag]["ladder"]
+                + self.weights["currentWar"] * self.members[player_tag]["current_war"]
+                + self.weights["previousSeasonLeague"]
                 * self.members[player_tag]["previous_league"]
-                + self.ratingCoefficients["currentSeasonLeague"]
+                + self.weights["currentSeasonLeague"]
                 * self.members[player_tag]["current_league"]
-                + self.ratingCoefficients["previousSeasonTrophies"]
+                + self.weights["previousSeasonTrophies"]
                 * self.members[player_tag]["previous_trophies"]
-                + self.ratingCoefficients["currentSeasonTrophies"]
+                + self.weights["currentSeasonTrophies"]
                 * self.members[player_tag]["current_trophies"]
             )
             if self.members[player_tag]["war_history"] is not None:
                 self.members[player_tag]["rating"] += (
-                    self.ratingCoefficients["warHistory"]
-                    * self.members[player_tag]["war_history"]
+                    self.weights["warHistory"] * self.members[player_tag]["war_history"]
                 )
             else:
                 self.members[player_tag]["rating"] += (
-                    self.ratingCoefficients["warHistory"] * new_player_warLog_rating
+                    self.weights["warHistory"] * new_player_warLog_rating
                 )
 
         performance = pd.DataFrame.from_dict(self.members, orient="index")
@@ -242,11 +262,11 @@ class EvaluationPerformer:
         print("Performance rating calculated according to the following formula:")
         print(
             "rating =",
-            "{:.2f}".format(self.ratingCoefficients["ladder"]),
+            "{:.2f}".format(self.weights["ladder"]),
             "* ladder +",
-            "{:.2f}".format(self.ratingCoefficients["currentWar"]),
+            "{:.2f}".format(self.weights["currentWar"]),
             "* current_war +",
-            "{:.2f}".format(self.ratingCoefficients["warHistory"]),
+            "{:.2f}".format(self.weights["warHistory"]),
             "* war_history",
         )
         return performance.sort_values("rating", ascending=False)

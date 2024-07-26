@@ -85,8 +85,11 @@ def perform_evaluation(plot: bool):
     )
     excusesDf = gSheetsWrapper.get_excuses(excuses_gsheet)
 
-    evaluationPerformer = EvaluationPerformer(members, current_war, war_log, path)
-    evaluationPerformer.adjust_war_weights(rating_coefficients)
+    evaluationPerformer = EvaluationPerformer(
+        members, current_war, war_log, path, rating_coefficients
+    )
+    evaluationPerformer.adjust_war_weights()
+    evaluationPerformer.adjust_season_weights()
     evaluationPerformer.account_for_shorter_wars(threeDayWars)
     evaluationPerformer.ignore_selected_wars(ignoreWars)
     evaluationPerformer.accept_excuses(valid_excuses, excusesDf)
