@@ -26,6 +26,7 @@ class EvaluationPerformer:
         self.path = path
         self.warProgress = None
         self.weights = rating_coefficients
+        self._check_weights()
 
     def adjust_war_weights(self):
         now = datetime.now(timezone.utc)
@@ -46,6 +47,7 @@ class EvaluationPerformer:
 
         print("War progress:", war_progress)
         self.warProgress = war_progress
+        self._check_weights()
 
     def adjust_season_weights(self) -> None:
         now: datetime = datetime.now(timezone.utc)
@@ -71,6 +73,13 @@ class EvaluationPerformer:
         )
         self.weights["currentSeasonTrophies"] -= redistibuted_trophy_weight
         self.weights["previousSeasonTrophies"] += redistibuted_trophy_weight
+        self._check_weights()
+
+    def _check_weights(self) -> None:
+        if min(self.weights.values()) < 0:
+            raise ValueError("All rating coefficients must be positive.")
+        if not math.isclose(sum(self.weights.values()), 1):
+            raise ValueError("Sum of rating coefficients must be 1.")
 
     def ignore_selected_wars(self, ignoreWars: list[str]):
         ignoredWarsInHistory = list(set(ignoreWars) & set(self.warLog.columns))

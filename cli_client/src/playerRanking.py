@@ -6,13 +6,6 @@ from src import crApiWrapper
 from src import historyWrapper
 
 
-def check_coefficients(rating_coefficients):
-    rating_coefficients_list = list(rating_coefficients.values())
-    if sum(rating_coefficients_list) != 1.0 or min(rating_coefficients_list) < 0:
-        print("Error: Rating coefficients do not sum up to 1.0 or are negative.")
-        exit()
-
-
 def print_pending_rank_changes(members, war_log, requirements):
     war_log = war_log.copy()
     war_log = war_log.drop("mean", axis=1)
@@ -73,7 +66,6 @@ def perform_evaluation(plot: bool):
     ignoreWars = props["ignoreWars"]
     threeDayWars = props["threeDayWars"]
 
-    check_coefficients(rating_coefficients)
     print(f"Evaluating performance of players from {clan_tag}...")
     members = crApiWrapper.get_current_members(clan_tag, cr_token, cr_api_url)
     war_log = crApiWrapper.get_war_statistics(clan_tag, members, cr_token, cr_api_url)
