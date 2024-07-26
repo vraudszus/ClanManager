@@ -27,43 +27,53 @@ def givenSimpleWarHistory() -> tuple[dict, dict]:
 def test_ignoreSelectedWars_ignoreNothing():
     currentWar, warLog = givenSimpleWarHistory()
     currentWarActual, warLogActual = ignoreSelectedWars(
-        pd.Series(currentWar), pd.DataFrame.from_dict(warLog, orient="index"), [])
+        pd.Series(currentWar), pd.DataFrame.from_dict(warLog, orient="index"), []
+    )
 
-    assert pd.DataFrame.equals(pd.DataFrame.from_dict(
-        warLog, orient="index"), warLogActual)
+    assert pd.DataFrame.equals(
+        pd.DataFrame.from_dict(warLog, orient="index"), warLogActual
+    )
     assert pd.Series.equals(pd.Series(currentWar), currentWarActual)
 
 
 def test_ignoreSelectedWars_ignoreOnlyCurrentWar():
     currentWar, warLog = givenSimpleWarHistory()
     currentWarActual, warLogActual = ignoreSelectedWars(
-        pd.Series(currentWar), pd.DataFrame.from_dict(warLog, orient="index"), ["20.2"])
-    currentWarExpected = pd.Series({
-        "a": 0,
-        "b": 0,
-        "c": 0,
-    })
-    assert pd.DataFrame.equals(pd.DataFrame.from_dict(
-        warLog, orient="index"), warLogActual)
+        pd.Series(currentWar), pd.DataFrame.from_dict(warLog, orient="index"), ["20.2"]
+    )
+    currentWarExpected = pd.Series(
+        {
+            "a": 0,
+            "b": 0,
+            "c": 0,
+        }
+    )
+    assert pd.DataFrame.equals(
+        pd.DataFrame.from_dict(warLog, orient="index"), warLogActual
+    )
     assert pd.Series.equals(currentWarExpected, currentWarActual)
 
 
 def test_ignoreSelectedWars_secondInHistory():
     currentWar, warLog = givenSimpleWarHistory()
     currentWarActual, warLogActual = ignoreSelectedWars(
-        pd.Series(currentWar), pd.DataFrame.from_dict(warLog, orient="index"), ["20.0"])
-    warLogExpected = pd.DataFrame.from_dict({
-        "a": {
-            "20.1": 300,
-            "20.0": np.nan,
-            "19.4": 500,
+        pd.Series(currentWar), pd.DataFrame.from_dict(warLog, orient="index"), ["20.0"]
+    )
+    warLogExpected = pd.DataFrame.from_dict(
+        {
+            "a": {
+                "20.1": 300,
+                "20.0": np.nan,
+                "19.4": 500,
+            },
+            "b": {
+                "20.1": 200,
+                "19.4": 300,
+            },
+            "c": {},
         },
-        "b": {
-            "20.1": 200,
-            "19.4": 300,
-        },
-        "c": {},
-    }, orient="index")
+        orient="index",
+    )
     assert pd.DataFrame.equals(warLogExpected, warLogActual)
     assert pd.Series.equals(pd.Series(currentWar), currentWarActual)
 
@@ -73,23 +83,29 @@ def test_ignoreSelectedWars_allIncludingOutdatedWars():
     currentWarActual, warLogActual = ignoreSelectedWars(
         pd.Series(currentWar),
         pd.DataFrame.from_dict(warLog, orient="index"),
-        ["20.2", "20.1", "20.0", "19.4", "19.3"])
-    currentWarExpected = pd.Series({
-        "a": 0,
-        "b": 0,
-        "c": 0,
-    })
-    warLogExpected = pd.DataFrame.from_dict({
-        "a": {
-            "20.1": np.nan,
-            "20.0": np.nan,
-            "19.4": np.nan,
+        ["20.2", "20.1", "20.0", "19.4", "19.3"],
+    )
+    currentWarExpected = pd.Series(
+        {
+            "a": 0,
+            "b": 0,
+            "c": 0,
+        }
+    )
+    warLogExpected = pd.DataFrame.from_dict(
+        {
+            "a": {
+                "20.1": np.nan,
+                "20.0": np.nan,
+                "19.4": np.nan,
+            },
+            "b": {
+                "20.1": np.nan,
+                "19.4": np.nan,
+            },
+            "c": {},
         },
-        "b": {
-            "20.1": np.nan,
-            "19.4": np.nan,
-        },
-        "c": {},
-    }, orient="index")
+        orient="index",
+    )
     assert pd.DataFrame.equals(warLogExpected, warLogActual)
     assert pd.Series.equals(currentWarExpected, currentWarActual)

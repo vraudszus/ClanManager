@@ -21,17 +21,21 @@ def append_rating_history(rating_history_path: str, rating: pd.DataFrame):
 def filter_close_timestamps(rating_history: pd.DataFrame):
     columns_to_drop = []
     for i, timestamp in enumerate(rating_history.columns):
-        if i > 0 and timestamp - rating_history.columns[i-1] < timedelta(hours=6):
-            columns_to_drop.append(rating_history.columns[i-1])
+        if i > 0 and timestamp - rating_history.columns[i - 1] < timedelta(hours=6):
+            columns_to_drop.append(rating_history.columns[i - 1])
     rating_history.drop(columns_to_drop, inplace=True, axis="columns")
     return rating_history
 
 
-def plot_rating_history(rating_history_path: str, members: dict, rating_history_image: str):
+def plot_rating_history(
+    rating_history_path: str, members: dict, rating_history_image: str
+):
     # Only plots current clan members
     rating_history = pd.read_csv(rating_history_path, sep=";", index_col=0)
 
-    rating_history.columns = pd.to_datetime(rating_history.columns, format=DATETIME_FORMAT)
+    rating_history.columns = pd.to_datetime(
+        rating_history.columns, format=DATETIME_FORMAT
+    )
     rating_history = filter_close_timestamps(rating_history)
     rating_history = rating_history.loc[members.keys()]
     rating_history.index = [members[tag]["name"] for tag in rating_history.index]
@@ -40,7 +44,7 @@ def plot_rating_history(rating_history_path: str, members: dict, rating_history_
     fig = plt.figure()
     ax = fig.add_subplot(111)
     colormap = list(plt.cm.tab20.colors)
-    del colormap[4-1::4]  # Delete every 4th color
+    del colormap[4 - 1 :: 4]  # Delete every 4th color
     prop_cycle = cycler(color=colormap) * cycler(linestyle=["-", ":", "--", "-."])
     ax.set_prop_cycle(prop_cycle)
     rating_history.plot(

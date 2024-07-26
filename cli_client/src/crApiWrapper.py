@@ -5,10 +5,7 @@ import pandas as pd
 
 def prepare_headers(api_token_path):
     api_token = open(api_token_path, "r").read()
-    headers = {
-        "Accept": "application/json",
-        "authorization": f"Bearer {api_token}"
-    }
+    headers = {"Accept": "application/json", "authorization": f"Bearer {api_token}"}
     return headers
 
 
@@ -22,7 +19,9 @@ def handle_html_status_code(status_code, response_text):
 def get_current_members(clan_tag, api_token_path, base_url):
     print("Building list of current members...")
     api_call = f"/clans/%23{clan_tag[1:]}"
-    response = requests.get(base_url + api_call, headers=prepare_headers(api_token_path))
+    response = requests.get(
+        base_url + api_call, headers=prepare_headers(api_token_path)
+    )
     handle_html_status_code(response.status_code, response.text)
     member_list = json.loads(response.text)["memberList"]
     members = {}
@@ -40,7 +39,9 @@ def get_current_members(clan_tag, api_token_path, base_url):
 def get_war_statistics(clan_tag, members, api_token_path, base_url):
     print("Fetching river race statistics...")
     api_call = f"/clans/%23{clan_tag[1:]}/riverracelog"
-    response = requests.get(base_url + api_call, headers=prepare_headers(api_token_path))
+    response = requests.get(
+        base_url + api_call, headers=prepare_headers(api_token_path)
+    )
     handle_html_status_code(response.status_code, response.text)
     river_races = json.loads(response.text)["items"]
 
@@ -69,7 +70,9 @@ def get_war_statistics(clan_tag, members, api_token_path, base_url):
 def get_current_river_race(clan_tag, api_token_path, base_url):
     print("Fetching current river race...")
     api_call = f"/clans/%23{clan_tag[1:]}/currentriverrace"
-    response = requests.get(base_url + api_call, headers=prepare_headers(api_token_path))
+    response = requests.get(
+        base_url + api_call, headers=prepare_headers(api_token_path)
+    )
     handle_html_status_code(response.status_code, response.text)
     clan = json.loads(response.text)["clan"]
 
@@ -80,13 +83,16 @@ def get_current_river_race(clan_tag, api_token_path, base_url):
     print("Handling of current river race has finished.")
     return pd.Series(current_war_statistics)
 
+
 def get_path_statistics(members, api_token_path, base_url):
     print(f"Fetching path of legends statistics for all {len(members)} members...")
     path_statistics = {}
     for i, player_tag in enumerate(members.keys()):
         print(f"Handling player {i+1} out of {len(members)}.", end="\r")
         api_call = f"/players/%23{player_tag[1:]}"
-        response = requests.get(base_url + api_call, headers=prepare_headers(api_token_path))
+        response = requests.get(
+            base_url + api_call, headers=prepare_headers(api_token_path)
+        )
         handle_html_status_code(response.status_code, response.text)
         player = json.loads(response.text)
 
