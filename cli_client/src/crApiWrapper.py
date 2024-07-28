@@ -1,3 +1,5 @@
+from concurrent.futures import ThreadPoolExecutor
+from typing import Tuple
 import requests
 import pandas as pd
 
@@ -7,10 +9,10 @@ import pandas as pd
 API_ENDPOINT: str = "https://proxy.royaleapi.dev/v1"
 
 
-def get_current_members(clan_tag, api_token_path):
+def get_current_members(clan_tag, api_token):
     print("Building list of current members...")
     path = f"/clans/%23{clan_tag[1:]}"
-    member_list = _get_json_from_api(path, api_token_path)["memberList"]
+    member_list = _get_json_from_api(path, api_token)["memberList"]
     members = {}
     for member in member_list:
         info = {
@@ -23,10 +25,10 @@ def get_current_members(clan_tag, api_token_path):
     return members
 
 
-def get_war_statistics(clan_tag, members, api_token_path):
+def get_war_statistics(clan_tag, members, api_token):
     print("Fetching river race statistics...")
     path = f"/clans/%23{clan_tag[1:]}/riverracelog"
-    river_races = _get_json_from_api(path, api_token_path)["items"]
+    river_races = _get_json_from_api(path, api_token)["items"]
 
     war_statistics = {}
     for player_tag in members.keys():
@@ -50,10 +52,10 @@ def get_war_statistics(clan_tag, members, api_token_path):
     return df.sort_index(axis=1, ascending=False, key=lambda x: x.astype(float))
 
 
-def get_current_river_race(clan_tag, api_token_path):
+def get_current_river_race(clan_tag, api_token):
     print("Fetching current river race...")
     path = f"/clans/%23{clan_tag[1:]}/currentriverrace"
-    clan = _get_json_from_api(path, api_token_path)["clan"]
+    clan = _get_json_from_api(path, api_token)["clan"]
 
     current_war_statistics = {}
     for participant in clan["participants"]:
@@ -63,28 +65,33 @@ def get_current_river_race(clan_tag, api_token_path):
     return pd.Series(current_war_statistics)
 
 
-def get_path_statistics(members, api_token_path):
+def get_path_statistics(members, api_token):
     print(f"Fetching path of legends statistics for all {len(members)} members...")
-    path_statistics = {}
-    for i, player_tag in enumerate(members.keys()):
-        print(f"Handling player {i+1} out of {len(members)}.", end="\r")
-        player = _get_json_from_api(f"/players/%23{player_tag[1:]}", api_token_path)
+
+    def get_stats_for_player(player_tag: str) -> Tuple[str, dict[str, int]]:
+        player = _get_json_from_api(f"/players/%23{player_tag[1:]}", api_token)
 
         current_season = player["currentPathOfLegendSeasonResult"]
         previous_season = player["lastPathOfLegendSeasonResult"]
 
-        path_statistics[player_tag] = {
+        stats = {
             "current_season_league_number": current_season["leagueNumber"],
             "current_season_trophies": current_season["trophies"],
             "previous_season_league_number": previous_season["leagueNumber"],
             "previous_season_trophies": previous_season["trophies"],
         }
+        return player_tag, stats
+
+    with ThreadPoolExecutor() as executor:
+        path_statistics = dict(
+            executor.map(lambda tag: get_stats_for_player(tag), members.keys())
+        )
+
     print("Collection of path of legends statistics has finished.")
     return pd.DataFrame.from_dict(path_statistics, orient="index")
 
 
-def _get_json_from_api(path: str, api_token_path: str):
-    api_token = open(api_token_path, "r").read()
+def _get_json_from_api(path: str, api_token: str):
     headers = {"Accept": "application/json", "authorization": f"Bearer {api_token}"}
     response = requests.get(API_ENDPOINT + path, headers=headers)
     response.raise_for_status()
