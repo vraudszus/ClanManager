@@ -1,9 +1,14 @@
+import json
+import os
+from pathlib import Path
 import yaml
 
-from src.evalutation_performer import EvaluationPerformer
-from src.gsheetsApiWrapper import GSheetsWrapper
-from src import crApiWrapper
-from src import historyWrapper
+from clanmanager import crApiWrapper
+from clanmanager import historyWrapper
+from clanmanager.evalutation_performer import EvaluationPerformer
+from clanmanager.gsheetsApiWrapper import GSheetsWrapper
+
+ROOT_DIR = Path(__file__).parent.parent.parent
 
 
 def print_pending_rank_changes(members, war_log, requirements):
@@ -46,11 +51,8 @@ def print_pending_rank_changes(members, war_log, requirements):
 
 
 def perform_evaluation(plot: bool):
-    props = yaml.safe_load(open("properties.yaml", "r"))
+    props = yaml.safe_load(open(ROOT_DIR / "properties.yaml", "r"))
     clan_tag = props["clanTag"]
-    cr_token_path = props["apiTokens"]["crApiTokenPath"]
-    gsheet_credentials = props["apiTokens"]["gsheetsCredentialsPath"]
-    gsheet_token = props["apiTokens"]["gsheetsTokenPath"]
     rating_coefficients = props["ratingCoefficients"]
     new_player_war_log_rating = props["newPlayerWarLogRating"]
     valid_excuses = props["valid_excuses"]
@@ -61,11 +63,15 @@ def perform_evaluation(plot: bool):
     rating_history_image = props["ratingHistoryImage"]
     rating_gsheet = props["googleSheets"]["rating"]
     excuses_gsheet = props["googleSheets"]["excuses"]
-    spreadsheet_id_path = props["googleSheets"]["spreadsheetIdPath"]
+    gsheet_access_token_path = props["googleSheets"]["gsheetsAccessTokenPath"]
     ignoreWars = props["ignoreWars"]
     threeDayWars = props["threeDayWars"]
 
-    cr_api_token = open(cr_token_path, "r").read()
+    cr_api_token = os.getenv("CR_API_TOKEN")
+    gsheets_refresh_token = json.loads(os.getenv("GSHEETS_REFRESH_TOKEN"))
+    gsheets_spreadsheet_id = os.getenv("GSHEET_SPREADSHEET_ID")
+    if not cr_api_token or not gsheets_refresh_token or not gsheets_spreadsheet_id:
+        raise KeyError("Required secrets not found in environment.")
 
     print(f"Evaluating performance of players from {clan_tag}...")
     members = crApiWrapper.get_current_members(clan_tag, cr_api_token)
@@ -74,7 +80,9 @@ def perform_evaluation(plot: bool):
     path = crApiWrapper.get_path_statistics(members, cr_api_token)
 
     gSheetsWrapper = GSheetsWrapper(
-        gsheet_credentials, gsheet_token, spreadsheet_id_path
+        gsheets_refresh_token,
+        gsheets_spreadsheet_id,
+        ROOT_DIR / gsheet_access_token_path,
     )
     excusesDf = gSheetsWrapper.get_excuses(excuses_gsheet)
 
@@ -88,10 +96,12 @@ def perform_evaluation(plot: bool):
     evaluationPerformer.accept_excuses(valid_excuses, excusesDf)
     performance = evaluationPerformer.evaluate_performance(new_player_war_log_rating)
 
-    historyWrapper.append_rating_history(rating_history_file, performance["rating"])
+    historyWrapper.append_rating_history(
+        ROOT_DIR / rating_history_file, performance["rating"]
+    )
     if plot:
         historyWrapper.plot_rating_history(
-            rating_history_file, members, rating_history_image
+            ROOT_DIR / rating_history_file, members, ROOT_DIR / rating_history_image
         )
     print_pending_rank_changes(members, war_log, pro_demotion_requirements)
 
@@ -99,7 +109,7 @@ def perform_evaluation(plot: bool):
     performance.index += 1
     performance.loc["mean"] = performance.iloc[:, 2:].mean()
     performance.loc["median"] = performance.iloc[:-1, 2:].median()
-    performance.to_csv(rating_file, sep=";", float_format="%.0f")
+    performance.to_csv(ROOT_DIR / rating_file, sep=";", float_format="%.0f")
     print(performance)
 
     gSheetsWrapper.write_df_to_sheet(performance, rating_gsheet)

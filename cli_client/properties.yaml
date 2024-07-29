@@ -1,10 +1,5 @@
 clanTag: "#GP9GRQ"
 
-apiTokens:
-  crApiTokenPath: "API-token.txt"
-  gsheetsCredentialsPath: "credentials.json"
-  gsheetsTokenPath: "token.json"
-
 ratingCoefficients:
   # must sum up to 1.0 and values must be >= 0
   ladder: 0.075
@@ -38,6 +33,7 @@ googleSheets:
   spreadsheetIdPath: "gSpreadsheetId.txt" # A file that contains your spreadsheetId
   rating: "PlayerRanking" # The name of the sheet for the calculated rating table
   excuses: "Abmeldungen" # The name of the sheet used to track excuses
+  gsheetsAccessTokenPath: ".gsheets_access_token.json"
 
 ratingFile: "player-ranking.csv"
 ratingHistoryFile: "player-ranking-history.csv"

@@ -13,29 +13,29 @@ class GSheetsWrapper:
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
     def __init__(
-        self, credentialsPath: str, tokenPath: str, spreadSheetIdPath: str
+        self, refresh_token: str, spreadSheetId: str, access_token_path: str
     ) -> None:
-        self.service = self.connect_to_service(credentialsPath, tokenPath)
-        self.spreadSheetId = open(spreadSheetIdPath, "r").read()
+        self.service = self.connect_to_service(refresh_token, access_token_path)
+        self.spreadSheetId = spreadSheetId
 
-    def connect_to_service(self, credentials_path: str, token_path: str):
+    def connect_to_service(self, refresh_token: str, access_token_path: str):
         creds = None
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
-        if os.path.exists(token_path):
-            creds = Credentials.from_authorized_user_file(token_path, self.SCOPES)
+        if os.path.exists(access_token_path):
+            creds = Credentials.from_authorized_user_file(
+                access_token_path, self.SCOPES
+            )
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    credentials_path, self.SCOPES
-                )
+                flow = InstalledAppFlow.from_client_config(refresh_token, self.SCOPES)
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
-            with open(token_path, "w") as token:
+            with open(access_token_path, "w") as token:
                 token.write(creds.to_json())
 
         return build("sheets", "v4", credentials=creds)
