@@ -101,7 +101,7 @@ class GSheetsWrapper:
             return pd.DataFrame()
 
     def update_excuse_sheet(
-        self, members, current_war, war_history, not_in_clan_str, sheet_name
+        self, members, current_war, war_history: pd.DataFrame, not_in_clan_str, sheet_name
     ):
         excuses = self.get_excuses(sheet_name)
 
@@ -123,8 +123,7 @@ class GSheetsWrapper:
         wars = war_history.copy()
         wars.drop(columns="mean", inplace=True)
         wars.insert(0, "current", current_war)
-        wars.fillna(not_in_clan_str, inplace=True)
-        wars = wars.applymap(empty_cells_with_numbers)
+        wars = wars.map(empty_cells_with_numbers)
         missing = excuses.index.difference(wars.index)
         missing_df = pd.DataFrame(index=missing, columns=wars.columns).fillna(
             not_in_clan_str
@@ -164,7 +163,7 @@ class GSheetsWrapper:
                 for tag in members:
                     # add rows for new players
                     if tag not in excuses.index:
-                        excuses = excuses.append(pd.Series(name=tag))
+                        excuses.loc[tag] = pd.Series()
 
         # add names
         excuses.index.name = "tag"
