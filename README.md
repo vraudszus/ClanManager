@@ -49,7 +49,7 @@ First, make sure to update the value of `clanTag` in `properties.yaml` and custo
 
     Options:
         -p --plot
-        Use this flag to enable plotting of the rating history. 
+        Use this flag to enable plotting of the rating history.
         The resulting image will be saved to the path specified in the properties.
 
 ## Evaluation criteria customization

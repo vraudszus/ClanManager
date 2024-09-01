@@ -23,7 +23,7 @@ public class Player {
 
   @Enumerated(EnumType.STRING)
   private Role role;
-  
+
   private int donations;
 
   public String getTag() {

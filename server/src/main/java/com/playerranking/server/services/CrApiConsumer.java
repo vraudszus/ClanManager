@@ -57,7 +57,7 @@ public class CrApiConsumer {
     ResponseEntity<Clan> response =
         restTemplate.exchange(
             getClanUri(clanTag), HttpMethod.GET, buildRequestEntity(), Clan.class);
-    
+
     Clan clan = response.getBody();
     playerRepository.saveAll(clan.getMembers());
     clanRepository.save(clan);

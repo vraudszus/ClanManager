@@ -22,6 +22,7 @@ player-ranking = "run_player_ranking:run"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.6.3"
+pre-commit = "^3.8.0"
 
 [tool.ruff]
 line-length = 120
