@@ -20,6 +20,12 @@ python-dotenv = "^1.0.1"
 [tool.poetry.scripts]
 player-ranking = "run_player_ranking:run"
 
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.6.3"
+
+[tool.ruff]
+line-length = 120
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

@@ -30,9 +30,7 @@ def test_ignoreSelectedWars_ignoreNothing():
         pd.Series(currentWar), pd.DataFrame.from_dict(warLog, orient="index"), []
     )
 
-    assert pd.DataFrame.equals(
-        pd.DataFrame.from_dict(warLog, orient="index"), warLogActual
-    )
+    assert pd.DataFrame.equals(pd.DataFrame.from_dict(warLog, orient="index"), warLogActual)
     assert pd.Series.equals(pd.Series(currentWar), currentWarActual)
 
 
@@ -48,9 +46,7 @@ def test_ignoreSelectedWars_ignoreOnlyCurrentWar():
             "c": 0,
         }
     )
-    assert pd.DataFrame.equals(
-        pd.DataFrame.from_dict(warLog, orient="index"), warLogActual
-    )
+    assert pd.DataFrame.equals(pd.DataFrame.from_dict(warLog, orient="index"), warLogActual)
     assert pd.Series.equals(currentWarExpected, currentWarActual)
 
 

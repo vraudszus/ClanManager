@@ -83,9 +83,7 @@ def get_path_statistics(members, api_token):
         return player_tag, stats
 
     with ThreadPoolExecutor() as executor:
-        path_statistics = dict(
-            executor.map(lambda tag: get_stats_for_player(tag), members.keys())
-        )
+        path_statistics = dict(executor.map(lambda tag: get_stats_for_player(tag), members.keys()))
 
     print("Collection of path of legends statistics has finished.")
     return pd.DataFrame.from_dict(path_statistics, orient="index")

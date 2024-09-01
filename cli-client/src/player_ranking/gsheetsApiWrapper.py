@@ -12,9 +12,7 @@ from googleapiclient.discovery import build
 class GSheetsWrapper:
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    def __init__(
-        self, refresh_token: str, spreadSheetId: str, access_token_path: str
-    ) -> None:
+    def __init__(self, refresh_token: str, spreadSheetId: str, access_token_path: str) -> None:
         self.service = self.connect_to_service(refresh_token, access_token_path)
         self.spreadSheetId = spreadSheetId
 
@@ -24,9 +22,7 @@ class GSheetsWrapper:
         # created automatically when the authorization flow completes for the first
         # time.
         if os.path.exists(access_token_path):
-            creds = Credentials.from_authorized_user_file(
-                access_token_path, self.SCOPES
-            )
+            creds = Credentials.from_authorized_user_file(access_token_path, self.SCOPES)
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
@@ -53,11 +49,7 @@ class GSheetsWrapper:
                     return sheet["properties"]["sheetId"]
 
     def _clear_sheet(self, sheet_name: str):
-        request = (
-            self.service.spreadsheets()
-            .values()
-            .clear(spreadsheetId=self.spreadSheetId, range=sheet_name)
-        )
+        request = self.service.spreadsheets().values().clear(spreadsheetId=self.spreadSheetId, range=sheet_name)
         return request.execute()
 
     def write_df_to_sheet(self, df, sheet_name: str):
@@ -79,19 +71,12 @@ class GSheetsWrapper:
                 }
             ]
         }
-        request = self.service.spreadsheets().batchUpdate(
-            spreadsheetId=self.spreadSheetId, body=body
-        )
+        request = self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadSheetId, body=body)
         response = request.execute()
         return response
 
     def get_excuses(self, sheet_name: str) -> pd.DataFrame:
-        result = (
-            self.service.spreadsheets()
-            .values()
-            .get(spreadsheetId=self.spreadSheetId, range=sheet_name)
-            .execute()
-        )
+        result = self.service.spreadsheets().values().get(spreadsheetId=self.spreadSheetId, range=sheet_name).execute()
         data = result.get("values", [])
         # pad short rows to prevent mismatch between column header count and data columns
         data = list(zip(*itertools.zip_longest(*data)))
@@ -100,9 +85,7 @@ class GSheetsWrapper:
         else:
             return pd.DataFrame()
 
-    def update_excuse_sheet(
-        self, members, current_war, war_history: pd.DataFrame, not_in_clan_str, sheet_name
-    ):
+    def update_excuse_sheet(self, members, current_war, war_history: pd.DataFrame, not_in_clan_str, sheet_name):
         excuses = self.get_excuses(sheet_name)
 
         def empty_cells_with_numbers(x):
@@ -125,9 +108,7 @@ class GSheetsWrapper:
         wars.insert(0, "current", current_war)
         wars = wars.map(empty_cells_with_numbers)
         missing = excuses.index.difference(wars.index)
-        missing_df = pd.DataFrame(index=missing, columns=wars.columns).fillna(
-            not_in_clan_str
-        )
+        missing_df = pd.DataFrame(index=missing, columns=wars.columns).fillna(not_in_clan_str)
         wars = pd.concat([wars, missing_df])
 
         try:
@@ -154,9 +135,7 @@ class GSheetsWrapper:
                 excuses.columns = wars.columns.insert(0, "name")
                 tags_to_remove = excuses[excuses.eq(not_in_clan_str).sum(1) >= 11].index
                 if not tags_to_remove.empty:
-                    print(
-                        ", ".join(tags_to_remove.tolist()), "removed from", sheet_name
-                    )
+                    print(", ".join(tags_to_remove.tolist()), "removed from", sheet_name)
                     excuses.drop(tags_to_remove, inplace=True)
             else:
                 print("Restore old", sheet_name)

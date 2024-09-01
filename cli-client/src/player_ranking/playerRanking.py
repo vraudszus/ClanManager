@@ -17,35 +17,19 @@ def print_pending_rank_changes(members, war_log, requirements):
     min_fame = requirements["minFameForCountingWar"]
     min_wars = requirements["minCountingWars"]
     # promotions
-    only_members = dict(
-        (k, v["name"]) for (k, v) in members.items() if v["role"] == "member"
-    )
+    only_members = dict((k, v["name"]) for (k, v) in members.items() if v["role"] == "member")
     promotion_deserving_logs = war_log[war_log >= min_fame].count(axis="columns")
-    promotion_deserving_logs = promotion_deserving_logs[
-        promotion_deserving_logs >= min_wars
-    ]
-    promotion_deserving_logs = promotion_deserving_logs[
-        promotion_deserving_logs.index.isin(only_members.keys())
-    ]
-    promotion_deserving_logs = list(
-        promotion_deserving_logs.index.map(lambda k: only_members[k])
-    )
+    promotion_deserving_logs = promotion_deserving_logs[promotion_deserving_logs >= min_wars]
+    promotion_deserving_logs = promotion_deserving_logs[promotion_deserving_logs.index.isin(only_members.keys())]
+    promotion_deserving_logs = list(promotion_deserving_logs.index.map(lambda k: only_members[k]))
     if promotion_deserving_logs:
         print("Pending promotions for:", ", ".join(promotion_deserving_logs))
     # demotions
-    only_elders = dict(
-        (k, v["name"]) for (k, v) in members.items() if v["role"] == "elder"
-    )
+    only_elders = dict((k, v["name"]) for (k, v) in members.items() if v["role"] == "elder")
     demotion_deserving_logs = war_log[war_log >= min_fame].count(axis="columns")
-    demotion_deserving_logs = demotion_deserving_logs[
-        demotion_deserving_logs < min_wars
-    ]
-    demotion_deserving_logs = demotion_deserving_logs[
-        demotion_deserving_logs.index.isin(only_elders.keys())
-    ]
-    demotion_deserving_logs = list(
-        demotion_deserving_logs.index.map(lambda k: only_elders[k])
-    )
+    demotion_deserving_logs = demotion_deserving_logs[demotion_deserving_logs < min_wars]
+    demotion_deserving_logs = demotion_deserving_logs[demotion_deserving_logs.index.isin(only_elders.keys())]
+    demotion_deserving_logs = list(demotion_deserving_logs.index.map(lambda k: only_elders[k]))
     if demotion_deserving_logs:
         print("Pending demotions for:", ", ".join(demotion_deserving_logs))
 
@@ -86,9 +70,7 @@ def perform_evaluation(plot: bool):
     )
     excusesDf = gSheetsWrapper.get_excuses(excuses_gsheet)
 
-    evaluationPerformer = EvaluationPerformer(
-        members, current_war, war_log, path, rating_coefficients
-    )
+    evaluationPerformer = EvaluationPerformer(members, current_war, war_log, path, rating_coefficients)
     evaluationPerformer.adjust_war_weights()
     evaluationPerformer.adjust_season_weights()
     evaluationPerformer.account_for_shorter_wars(threeDayWars)
@@ -96,13 +78,9 @@ def perform_evaluation(plot: bool):
     evaluationPerformer.accept_excuses(valid_excuses, excusesDf)
     performance = evaluationPerformer.evaluate_performance(new_player_war_log_rating)
 
-    historyWrapper.append_rating_history(
-        ROOT_DIR / rating_history_file, performance["rating"]
-    )
+    historyWrapper.append_rating_history(ROOT_DIR / rating_history_file, performance["rating"])
     if plot:
-        historyWrapper.plot_rating_history(
-            ROOT_DIR / rating_history_file, members, ROOT_DIR / rating_history_image
-        )
+        historyWrapper.plot_rating_history(ROOT_DIR / rating_history_file, members, ROOT_DIR / rating_history_image)
     print_pending_rank_changes(members, war_log, pro_demotion_requirements)
 
     performance = performance.reset_index(drop=True)
@@ -113,6 +91,4 @@ def perform_evaluation(plot: bool):
     print(performance)
 
     gSheetsWrapper.write_df_to_sheet(performance, rating_gsheet)
-    gSheetsWrapper.update_excuse_sheet(
-        members, current_war, war_log, not_in_clan_excuse, excuses_gsheet
-    )
+    gSheetsWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet)

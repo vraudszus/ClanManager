@@ -27,15 +27,11 @@ def filter_close_timestamps(rating_history: pd.DataFrame):
     return rating_history
 
 
-def plot_rating_history(
-    rating_history_path: str, members: dict, rating_history_image: str
-):
+def plot_rating_history(rating_history_path: str, members: dict, rating_history_image: str):
     # Only plots current clan members
     rating_history = pd.read_csv(rating_history_path, sep=";", index_col=0)
 
-    rating_history.columns = pd.to_datetime(
-        rating_history.columns, format=DATETIME_FORMAT
-    )
+    rating_history.columns = pd.to_datetime(rating_history.columns, format=DATETIME_FORMAT)
     rating_history = filter_close_timestamps(rating_history)
     rating_history = rating_history.loc[members.keys()]
     rating_history.index = [members[tag]["name"] for tag in rating_history.index]
