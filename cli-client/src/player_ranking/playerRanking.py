@@ -3,10 +3,10 @@ import os
 from pathlib import Path
 import yaml
 
-from cli_client.clanmanager import crApiWrapper
-from cli_client.clanmanager import historyWrapper
-from cli_client.clanmanager.evalutation_performer import EvaluationPerformer
-from cli_client.clanmanager.gsheetsApiWrapper import GSheetsWrapper
+from player_ranking import crApiWrapper
+from player_ranking import historyWrapper
+from player_ranking.evalutation_performer import EvaluationPerformer
+from player_ranking.gsheetsApiWrapper import GSheetsWrapper
 
 ROOT_DIR = Path(__file__).parent.parent.parent
 

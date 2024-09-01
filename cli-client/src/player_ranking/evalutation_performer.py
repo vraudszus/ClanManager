@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import math
 
-from cli_client.clanmanager.datetime_util import (
+from player_ranking.datetime_util import (
     get_next_first_monday_10_AM,
     get_previous_first_monday_10_AM,
     get_time_since_last_thursday_10_Am,

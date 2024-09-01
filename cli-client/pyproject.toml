@@ -1,8 +1,8 @@
 [tool.poetry]
-name = "cli-client"
+name = "player-ranking"
 version = "0.1.0"
 description = "CLI interface to compute a ranking between all players in a Clash Royale clan"
-authors = ["Vincent Raudszus <vincent.raudszus@gmail.com>"]
+authors = ["Vincent Raudszus"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -18,7 +18,7 @@ google-auth-oauthlib = "^1.2.1"
 python-dotenv = "^1.0.1"
 
 [tool.poetry.scripts]
-player-ranking = "cli_client.__main__:main"
+player-ranking = "run_player_ranking:run"
 
 [build-system]
 requires = ["poetry-core"]
