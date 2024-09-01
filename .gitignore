@@ -3,7 +3,6 @@
 __pycache__
 server/.mvn/wrapper/
 
-cli-client/.env
 cli-client/.gsheets_access_token.json
 
 cli-client/player-ranking.csv
