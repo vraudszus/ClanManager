@@ -1,3 +1,4 @@
+import logging
 import os.path
 import pandas as pd
 import numpy as np
@@ -7,6 +8,8 @@ from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+
+LOGGER = logging.getLogger(__name__)
 
 
 class GSheetsWrapper:
@@ -97,7 +100,7 @@ class GSheetsWrapper:
 
         missingFromCurrentWar = pd.Index(members.keys()).difference(current_war.index)
         if not missingFromCurrentWar.empty:
-            print("Missing from current war:", missingFromCurrentWar)
+            LOGGER.info(f"Missing from current war: {missingFromCurrentWar}")
         goodKeys = current_war.index.intersection(members.keys())
         # goodKeys is needed as some members do not show up in current_war
         # at season begin when not logging in some time after the end the previous war
@@ -118,12 +121,12 @@ class GSheetsWrapper:
             last_recorded_cw = -1
 
         if last_recorded_cw not in war_history.columns.tolist():
-            print("Write complety new", sheet_name)
+            LOGGER.info(f"Write complety new {sheet_name}")
             excuses = wars
         else:
             columns_to_shift = war_history.columns.tolist().index(last_recorded_cw)
             if columns_to_shift > 0:
-                print("Shift existing", sheet_name, "by", columns_to_shift, "columns")
+                LOGGER.info(f"Shift existing {sheet_name} by {columns_to_shift} columns")
                 excuses = pd.concat(
                     [
                         excuses.iloc[:, :1],
@@ -135,10 +138,10 @@ class GSheetsWrapper:
                 excuses.columns = wars.columns.insert(0, "name")
                 tags_to_remove = excuses[excuses.eq(not_in_clan_str).sum(1) >= 11].index
                 if not tags_to_remove.empty:
-                    print(", ".join(tags_to_remove.tolist()), "removed from", sheet_name)
+                    LOGGER.info(f"Removed tags {tags_to_remove.tolist()} from sheet {sheet_name}")
                     excuses.drop(tags_to_remove, inplace=True)
             else:
-                print("Restore old", sheet_name)
+                LOGGER.info(f"Restore old {sheet_name}")
                 for tag in members:
                     # add rows for new players
                     if tag not in excuses.index:

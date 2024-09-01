@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from pathlib import Path
 import yaml
@@ -9,6 +10,7 @@ from player_ranking.evalutation_performer import EvaluationPerformer
 from player_ranking.gsheetsApiWrapper import GSheetsWrapper
 
 ROOT_DIR = Path(__file__).parent.parent.parent
+LOGGER = logging.getLogger(__name__)
 
 
 def print_pending_rank_changes(members, war_log, requirements):
@@ -23,7 +25,7 @@ def print_pending_rank_changes(members, war_log, requirements):
     promotion_deserving_logs = promotion_deserving_logs[promotion_deserving_logs.index.isin(only_members.keys())]
     promotion_deserving_logs = list(promotion_deserving_logs.index.map(lambda k: only_members[k]))
     if promotion_deserving_logs:
-        print("Pending promotions for:", ", ".join(promotion_deserving_logs))
+        LOGGER.info(f"Pending promotions for: {', '.join(promotion_deserving_logs)}")
     # demotions
     only_elders = dict((k, v["name"]) for (k, v) in members.items() if v["role"] == "elder")
     demotion_deserving_logs = war_log[war_log >= min_fame].count(axis="columns")
@@ -31,7 +33,7 @@ def print_pending_rank_changes(members, war_log, requirements):
     demotion_deserving_logs = demotion_deserving_logs[demotion_deserving_logs.index.isin(only_elders.keys())]
     demotion_deserving_logs = list(demotion_deserving_logs.index.map(lambda k: only_elders[k]))
     if demotion_deserving_logs:
-        print("Pending demotions for:", ", ".join(demotion_deserving_logs))
+        LOGGER.info(f"Pending demotions for: {', '.join(demotion_deserving_logs)}")
 
 
 def perform_evaluation(plot: bool):
@@ -57,7 +59,7 @@ def perform_evaluation(plot: bool):
     if not cr_api_token or not gsheets_refresh_token or not gsheets_spreadsheet_id:
         raise KeyError("Required secrets not found in environment.")
 
-    print(f"Evaluating performance of players from {clan_tag}...")
+    LOGGER.info(f"Evaluating performance of players from {clan_tag}...")
     members = crApiWrapper.get_current_members(clan_tag, cr_api_token)
     war_log = crApiWrapper.get_war_statistics(clan_tag, members, cr_api_token)
     current_war = crApiWrapper.get_current_river_race(clan_tag, cr_api_token)

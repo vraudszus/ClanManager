@@ -1,3 +1,4 @@
+import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import Dict
 import pandas as pd
@@ -9,6 +10,8 @@ from player_ranking.datetime_util import (
     get_previous_first_monday_10_AM,
     get_time_since_last_thursday_10_Am,
 )
+
+LOGGER = logging.getLogger(__name__)
 
 
 class EvaluationPerformer:
@@ -43,7 +46,7 @@ class EvaluationPerformer:
             self.weights["warHistory"] += self.weights["currentWar"] * (1 - war_progress)
             self.weights["currentWar"] *= war_progress
 
-        print("War progress:", war_progress)
+        LOGGER.info(f"War progress: {war_progress}")
         self.warProgress = war_progress
         self._check_weights()
 
@@ -56,7 +59,7 @@ class EvaluationPerformer:
         current_season_end: datetime = get_next_first_monday_10_AM(current_season_start)
 
         season_progress: float = (now - current_season_start) / (current_season_end - current_season_start)
-        print(f"Season progress: {season_progress}")
+        LOGGER.info(f"Season progress: {season_progress}")
 
         redistibuted_season_weight = self.weights["currentSeasonLeague"] * season_progress
         self.weights["currentSeasonLeague"] -= redistibuted_season_weight
@@ -94,7 +97,7 @@ class EvaluationPerformer:
                     self.warLog.loc[tag, war] = np.nan
                 else:
                     self.warLog.loc[tag, war] = 1600
-                print("Excuse accepted for", war, excuse, self.members[tag]["name"])
+                LOGGER.info(f"Excuse {excuse} accepted for player={self.members[tag]['name']} in war={war}")
 
         def handle_current_war(tag):
             excuse = excusesDf.at[tag, "current"]
@@ -103,7 +106,7 @@ class EvaluationPerformer:
                     self.currentWar.at[tag] = np.nan
                 else:
                     self.currentWar.at[tag] = 1600 * self.warProgress
-                print("Excuse accepted for current CW:", excuse, self.members[tag]["name"])
+                LOGGER.info(f"Excuse {excuse} accepted for player={self.members[tag]['name']} in current CW")
 
         for tag in self.members:
             if tag in excusesDf.index:
@@ -226,14 +229,16 @@ class EvaluationPerformer:
             ]
         ]
 
-        print("Performance rating calculated according to the following formula:")
-        print(
-            "rating =",
-            "{:.2f}".format(self.weights["ladder"]),
-            "* ladder +",
-            "{:.2f}".format(self.weights["currentWar"]),
-            "* current_war +",
-            "{:.2f}".format(self.weights["warHistory"]),
-            "* war_history",
+        LOGGER.info("Performance rating calculated according to the following formula:")
+        LOGGER.info(
+            (
+                "rating =",
+                "{:.2f}".format(self.weights["ladder"]),
+                "* ladder +",
+                "{:.2f}".format(self.weights["currentWar"]),
+                "* current_war +",
+                "{:.2f}".format(self.weights["warHistory"]),
+                "* war_history",
+            )
         )
         return performance.sort_values("rating", ascending=False)
