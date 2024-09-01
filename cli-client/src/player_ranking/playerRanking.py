@@ -49,7 +49,6 @@ def perform_evaluation(plot: bool):
     rating_history_image = props["ratingHistoryImage"]
     rating_gsheet = props["googleSheets"]["rating"]
     excuses_gsheet = props["googleSheets"]["excuses"]
-    gsheet_access_token_path = props["googleSheets"]["gsheetsAccessTokenPath"]
     ignoreWars = props["ignoreWars"]
     threeDayWars = props["threeDayWars"]
 
@@ -68,7 +67,7 @@ def perform_evaluation(plot: bool):
     gSheetsWrapper = GSheetsWrapper(
         gsheets_refresh_token,
         gsheets_spreadsheet_id,
-        ROOT_DIR / gsheet_access_token_path,
+        ROOT_DIR,
     )
     excusesDf = gSheetsWrapper.get_excuses(excuses_gsheet)
 

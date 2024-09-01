@@ -1,5 +1,7 @@
 import logging
 import os.path
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 import itertools
@@ -10,22 +12,24 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 LOGGER = logging.getLogger(__name__)
+ACCESS_TOKEN_FILENAME: str = ".gsheets_access_token.json"
 
 
 class GSheetsWrapper:
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    def __init__(self, refresh_token: str, spreadSheetId: str, access_token_path: str) -> None:
-        self.service = self.connect_to_service(refresh_token, access_token_path)
+    def __init__(self, refresh_token: str, spreadSheetId: str, root_path: Path) -> None:
+        self.access_token_path: str = (root_path / ACCESS_TOKEN_FILENAME).as_posix()
         self.spreadSheetId = spreadSheetId
+        self.service = self.connect_to_service(refresh_token)
 
-    def connect_to_service(self, refresh_token: str, access_token_path: str):
+    def connect_to_service(self, refresh_token: str):
         creds = None
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
-        if os.path.exists(access_token_path):
-            creds = Credentials.from_authorized_user_file(access_token_path, self.SCOPES)
+        if os.path.exists(self.access_token_path):
+            creds = Credentials.from_authorized_user_file(self.access_token_path, self.SCOPES)
         # If there are no (valid) credentials available, let the user log in.
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
@@ -34,7 +38,7 @@ class GSheetsWrapper:
                 flow = InstalledAppFlow.from_client_config(refresh_token, self.SCOPES)
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
-            with open(access_token_path, "w") as token:
+            with open(self.access_token_path, "w") as token:
                 token.write(creds.to_json())
 
         return build("sheets", "v4", credentials=creds)

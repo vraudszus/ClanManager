@@ -31,7 +31,6 @@ googleSheets:
   # Your spreadsheet must contain sheets named after the values of "rating" and "excuses".
   rating: "PlayerRanking" # The name of the sheet for the calculated rating table
   excuses: "Abmeldungen" # The name of the sheet used to track excuses
-  gsheetsAccessTokenPath: ".gsheets_access_token.json"
 
 ratingFile: "player-ranking.csv"
 ratingHistoryFile: "player-ranking-history.csv"
