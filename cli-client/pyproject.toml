@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "cli-client"
+version = "0.1.0"
+description = "CLI interface to compute a ranking between all players in a Clash Royale clan"
+authors = ["Vincent Raudszus <vincent.raudszus@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pyyaml = "^6.0.2"
+requests = "^2.32.3"
+pandas = "^2.2.2"
+matplotlib = "^3.9.2"
+matplotlib-label-lines = "^0.7.0"
+google-api-python-client = "^2.143.0"
+google-auth-httplib2 = "^0.2.0"
+google-auth-oauthlib = "^1.2.1"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.scripts]
+player-ranking = "cli_client.__main__:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

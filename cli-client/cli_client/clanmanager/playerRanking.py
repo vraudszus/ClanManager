@@ -3,10 +3,10 @@ import os
 from pathlib import Path
 import yaml
 
-from clanmanager import crApiWrapper
-from clanmanager import historyWrapper
-from clanmanager.evalutation_performer import EvaluationPerformer
-from clanmanager.gsheetsApiWrapper import GSheetsWrapper
+from cli_client.clanmanager import crApiWrapper
+from cli_client.clanmanager import historyWrapper
+from cli_client.clanmanager.evalutation_performer import EvaluationPerformer
+from cli_client.clanmanager.gsheetsApiWrapper import GSheetsWrapper
 
 ROOT_DIR = Path(__file__).parent.parent.parent
 
@@ -116,4 +116,3 @@ def perform_evaluation(plot: bool):
     gSheetsWrapper.update_excuse_sheet(
         members, current_war, war_log, not_in_clan_excuse, excuses_gsheet
     )
-    input()  # keep cli window open

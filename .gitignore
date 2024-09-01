@@ -1,13 +1,14 @@
 .vscode/
+.idea/
 __pycache__
 server/.mvn/wrapper/
 
-cli_client/.env
-cli_client/.gsheets_access_token.json
-cli_client/venv/
+cli-client/.env
+cli-client/.gsheets_access_token.json
 
-cli_client/player-ranking.csv
-cli_client/player-ranking-history.csv
-cli_client/player-ranking-history.png
-cli_client/FirstSighting.png
+cli-client/player-ranking.csv
+cli-client/player-ranking-history.csv
+cli-client/player-ranking-history.png
+cli-client/FirstSighting.png
+cli-client/PlayerRanking.lnk
 
