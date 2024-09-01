@@ -20,7 +20,7 @@ promotion_demotion_requirements:
 valid_excuses:
   # These values can be entered in your "excuses" spreadsheet and/or are inserted by the system.
   # The values of "notInClanExcuse" and "newPlayerExcuse" can be used to make the system ignore
-  # river races in the rating calculation on a per player basis.
+  # river races in the rating calculation on a per-player basis.
   notInClanExcuse: "nicht im Clan"
   newPlayerExcuse: "Neuling"
   # Use this value to set a fixed value of 1600 fame for a river race in the rating calculation.
@@ -28,9 +28,7 @@ valid_excuses:
   personalExcuse: "abgemeldet"
 
 googleSheets:
-  # Properties regarding your linked Google Sheets spreadsheet.
-  # Your spreadsheet must contain sheets with names equal to the values of "rating" and "excuses".
-  spreadsheetIdPath: "gSpreadsheetId.txt" # A file that contains your spreadsheetId
+  # Your spreadsheet must contain sheets named after the values of "rating" and "excuses".
   rating: "PlayerRanking" # The name of the sheet for the calculated rating table
   excuses: "Abmeldungen" # The name of the sheet used to track excuses
   gsheetsAccessTokenPath: ".gsheets_access_token.json"
@@ -39,11 +37,15 @@ ratingFile: "player-ranking.csv"
 ratingHistoryFile: "player-ranking-history.csv"
 ratingHistoryImage: "player-ranking-history.png"
 
+# Selected river races to ignore for the entire clan
+# The week counter starts from 0 each season
 ignoreWars:
   - "86.2"
   - "86.1"
   - "86.0"
 
+# River races that your clan won in just 3 days
+# Results will be scaled up to 4 days to ensure a fair comparison
 threeDayWars:
   - "88.2"
   - "97.0"
