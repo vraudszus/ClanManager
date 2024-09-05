@@ -251,14 +251,13 @@ class EvaluationPerformer:
 
         LOGGER.info("Performance rating calculated according to the following formula:")
         LOGGER.info(
-            (
-                "rating =",
-                "{:.2f}".format(self.weights["ladder"]),
-                "* ladder +",
-                "{:.2f}".format(self.weights["currentWar"]),
-                "* current_war +",
-                "{:.2f}".format(self.weights["warHistory"]),
-                "* war_history",
-            )
+            "rating "
+            f"= {self.weights['ladder']:.2f}*ladder "
+            f"+ {self.weights['currentWar']:.2f}*currentWar "
+            f"+ {self.weights['previousSeasonLeague']:.2f}*previousLeague "
+            f"+ {self.weights['currentSeasonLeague']:.2f}*currentLeague "
+            f"+ {self.weights['previousSeasonTrophies']:.2f}*previousPathTrophies "
+            f"+ {self.weights['currentSeasonTrophies']:.2f}*currentPathTrophies "
+            f"+ {self.weights['warHistory']:.2f}*warHistory +"
         )
         return performance.sort_values("rating", ascending=False)
