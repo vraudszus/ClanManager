@@ -145,37 +145,57 @@ class EvaluationPerformer:
         trophies_max = members_df["trophies"].max()
 
         for player_tag in self.members.keys():
-            ladder_rating = (self.members[player_tag]["trophies"] - trophies_min) / (trophies_max - trophies_min)
+            ladder_rating = (
+                (self.members[player_tag]["trophies"] - trophies_min) / (trophies_max - trophies_min)
+                if trophies_max != trophies_min
+                else 1
+            )
 
             previous_league = self.path.at[player_tag, "previous_season_league_number"]
-            previous_league_rating = (previous_league - previous_league_min) / (
-                previous_league_max - previous_league_min
+            previous_league_rating = (
+                (previous_league - previous_league_min) / (previous_league_max - previous_league_min)
+                if previous_league_max != previous_league_min
+                else 1
             )
             current_league = self.path.at[player_tag, "current_season_league_number"]
-            current_league_rating = (current_league - current_league_min) / (current_league_max - current_league_min)
+            current_league_rating = (
+                (current_league - current_league_min) / (current_league_max - current_league_min)
+                if current_league_max != current_league_min
+                else 1
+            )
 
             # only grant points to players in league 10
             previous_trophies_rating = 0
             if previous_league == 10:
                 previous_trophies_rating = (
-                    self.path.at[player_tag, "previous_season_trophies"] - previous_trophies_min
-                ) / (previous_trophies_max - previous_trophies_min)
+                    (self.path.at[player_tag, "previous_season_trophies"] - previous_trophies_min)
+                    / (previous_trophies_max - previous_trophies_min)
+                    if previous_trophies_max != previous_trophies_min
+                    else 1
+                )
             current_trophies_rating = 0
             if current_league == 10:
                 current_trophies_rating = (
-                    self.path.at[player_tag, "current_season_trophies"] - current_trophies_min
-                ) / (current_thropies_max - current_trophies_min)
+                    (self.path.at[player_tag, "current_season_trophies"] - current_trophies_min)
+                    / (current_thropies_max - current_trophies_min)
+                    if current_thropies_max != current_trophies_min
+                    else 1
+                )
 
             warLog_mean = self.warLog.at[player_tag, "mean"] if player_tag in self.warLog.index else None
 
             if not pd.isnull(warLog_mean):
-                warLog_rating = (warLog_mean - warLog_min_fame) / war_history_fame_range
+                warLog_rating = (
+                    (warLog_mean - warLog_min_fame) / war_history_fame_range if war_history_fame_range != 0 else 1
+                )
             else:
                 warLog_rating = None
             # player_tag is not present in current_war until a user has logged in after season reset
             current_fame = self.currentWar[player_tag] if player_tag in self.currentWar else 0
             if current_fame_range > 0:
-                current_war_rating = (current_fame - current_min_fame) / current_fame_range
+                current_war_rating = (
+                    (current_fame - current_min_fame) / current_fame_range if current_fame_range != 0 else 1
+                )
             else:
                 # Default value that is used during trainings days.
                 # Does not affect the rating on those days
