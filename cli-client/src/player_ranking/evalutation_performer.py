@@ -105,7 +105,7 @@ class EvaluationPerformer:
                 if excuse == valid_excuses["newPlayerExcuse"]:
                     self.currentWar.at[tag] = np.nan
                 else:
-                    self.currentWar.at[tag] = 1600 * self.warProgress
+                    self.currentWar.at[tag] = int(1600 * self.warProgress)
                 LOGGER.info(f"Excuse {excuse} accepted for player={self.members[tag]['name']} in current CW")
 
         for tag in self.members:
