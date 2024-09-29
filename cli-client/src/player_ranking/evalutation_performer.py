@@ -1,15 +1,17 @@
 import logging
-from datetime import date, datetime, timedelta, timezone
-from typing import Dict
-import pandas as pd
-import numpy as np
 import math
+from datetime import date, datetime, timedelta, timezone
+from typing import List
+
+import numpy as np
+import pandas as pd
 
 from player_ranking.datetime_util import (
     get_next_first_monday_10_AM,
     get_previous_first_monday_10_AM,
     get_time_since_last_thursday_10_Am,
 )
+from player_ranking.ranking_parameters import RankingParameters
 
 LOGGER = logging.getLogger(__name__)
 
@@ -21,36 +23,37 @@ class EvaluationPerformer:
         currentWar: pd.Series,
         warLog: pd.DataFrame,
         path: pd.DataFrame,
-        rating_coefficients: Dict[str, float],
+        ranking_parameters: RankingParameters,
     ) -> None:
         self.members = members
         self.currentWar = currentWar
         self.warLog = warLog
         self.path = path
         self.warProgress = None
-        self.weights = rating_coefficients
-        self._check_weights()
+        self.params = ranking_parameters
 
     def adjust_war_weights(self):
+        weights = self.params.ratingWeights
         now = datetime.now(timezone.utc)
         time_since_start = get_time_since_last_thursday_10_Am(now)
         if time_since_start > timedelta(days=4):
             # Training days are currently happening, do not count current war
             war_progress = 0
-            self.weights["warHistory"] += self.weights["currentWar"]
-            self.weights["currentWar"] = 0
+            weights.warHistory += weights.currentWar
+            weights.currentWar = 0
         else:
             # War days are currently happening
             # Linearly increase weight for current war
             war_progress = time_since_start / timedelta(days=4)  # ranges from 0 to 1
-            self.weights["warHistory"] += self.weights["currentWar"] * (1 - war_progress)
-            self.weights["currentWar"] *= war_progress
+            weights.warHistory += weights.currentWar * (1 - war_progress)
+            weights.currentWar *= war_progress
 
         LOGGER.info(f"War progress: {war_progress}")
         self.warProgress = war_progress
-        self._check_weights()
+        weights.check()
 
     def adjust_season_weights(self) -> None:
+        weights = self.params.ratingWeights
         now: datetime = datetime.now(timezone.utc)
         today: date = now.date()
 
@@ -61,62 +64,62 @@ class EvaluationPerformer:
         season_progress: float = (now - current_season_start) / (current_season_end - current_season_start)
         LOGGER.info(f"Season progress: {season_progress}")
 
-        redistibuted_season_weight = self.weights["currentSeasonLeague"] * season_progress
-        self.weights["currentSeasonLeague"] -= redistibuted_season_weight
-        self.weights["previousSeasonLeague"] += redistibuted_season_weight
+        redistributed_season_weight = weights.currentSeasonLeague * season_progress
+        weights.currentSeasonLeague -= redistributed_season_weight
+        weights.previousSeasonLeague += redistributed_season_weight
 
-        redistibuted_trophy_weight = self.weights["currentSeasonTrophies"] * season_progress
-        self.weights["currentSeasonTrophies"] -= redistibuted_trophy_weight
-        self.weights["previousSeasonTrophies"] += redistibuted_trophy_weight
-        self._check_weights()
+        redistributed_trophy_weight = weights.currentSeasonTrophies * season_progress
+        weights.currentSeasonTrophies -= redistributed_trophy_weight
+        weights.previousSeasonTrophies += redistributed_trophy_weight
+        weights.check()
 
-    def _check_weights(self) -> None:
-        if min(self.weights.values()) < 0:
-            raise ValueError("All rating coefficients must be positive.")
-        if not math.isclose(sum(self.weights.values()), 1):
-            raise ValueError("Sum of rating coefficients must be 1.")
-
-    def ignore_selected_wars(self, ignoreWars: list[str]):
-        ignoredWarsInHistory = list(set(ignoreWars) & set(self.warLog.columns))
+    def ignore_selected_wars(self):
+        ignored_wars: List[str] = self.params.ignoreWars
+        ignoredWarsInHistory = list(set(ignored_wars) & set(self.warLog.columns))
         self.warLog.loc[:, ignoredWarsInHistory] = np.nan
-        if ignoreWars and max([float(i) for i in ignoreWars]) > float(self.warLog.columns[0]):
+        if ignored_wars and max([float(i) for i in ignored_wars]) > float(self.warLog.columns[0]):
             self.currentWar.values[:] = 0
 
-    def account_for_shorter_wars(self, threeDayWars: list[str]):
-        shorterWarsInHistory = list(set(threeDayWars) & set(self.warLog.columns))
+    def account_for_shorter_wars(self):
+        shorterWarsInHistory = list(set(self.params.threeDayWars) & set(self.warLog.columns))
         self.warLog.loc[:, shorterWarsInHistory] *= 4 / 3
 
-    def accept_excuses(self, valid_excuses, excusesDf):
-        def handle_war(tag, war, fame):
-            excuse = excusesDf.at[tag, war]
-            if not math.isnan(fame) and excuse in valid_excuses.values():
-                if excuse in [
-                    valid_excuses["notInClanExcuse"],
-                    valid_excuses["newPlayerExcuse"],
-                ]:
-                    self.warLog.loc[tag, war] = np.nan
-                else:
-                    self.warLog.loc[tag, war] = 1600
-                LOGGER.info(f"Excuse {excuse} accepted for player={self.members[tag]['name']} in war={war}")
-
-        def handle_current_war(tag):
-            excuse = excusesDf.at[tag, "current"]
-            if excuse in valid_excuses.values():
-                if excuse == valid_excuses["newPlayerExcuse"]:
-                    self.currentWar.at[tag] = np.nan
-                else:
-                    self.currentWar.at[tag] = int(1600 * self.warProgress)
-                LOGGER.info(f"Excuse {excuse} accepted for player={self.members[tag]['name']} in current CW")
+    def accept_excuses(self, excuses_df):
+        def handle_excuse(player_name: str, old_fame: int, war_id: str, factor: float = 1):
+            excuse = excuses_df.at[tag, war_id]
+            if not excuse or not math.isnan(old_fame):
+                return old_fame
+            self.params.excuses.check_excuse(excuse)
+            if self.params.excuses.should_ignore_war(excuse):
+                new_fame = np.nan
+            else:
+                # scale if race is still ongoing
+                new_fame = int(1600 * factor)
+            LOGGER.info(f"Excuse {excuse} accepted for player={player_name} in war={war_id}")
+            return new_fame
 
         for tag in self.members:
-            if tag in excusesDf.index:
-                handle_current_war(tag)
+            name = self.members[tag]["name"]
+            if tag in excuses_df.index:
+                # current river race
+                self.currentWar.at[tag] = handle_excuse(
+                    player_name=name,
+                    old_fame=self.currentWar.at[tag],
+                    war_id="current",
+                    factor=self.warProgress,
+                )
                 if tag in self.warLog.index:
                     for war, fame in self.warLog.loc[tag].items():
-                        if war in excusesDf.columns:
-                            handle_war(tag, war, fame)
+                        if war in excuses_df.columns:
+                            # river race history
+                            self.warLog.loc[tag, war] = handle_excuse(
+                                player_name=name,
+                                old_fame=fame,
+                                war_id=war,
+                            )
 
-    def evaluate_performance(self, new_player_warLog_rating):
+    def evaluate_performance(self):
+        weights = self.params.ratingWeights
         self.warLog["mean"] = self.warLog.mean(axis=1)
         warLog_max_fame = self.warLog["mean"].max()
         warLog_min_fame = self.warLog["mean"].min()
@@ -221,19 +224,17 @@ class EvaluationPerformer:
             )
 
             self.members[player_tag]["rating"] = (
-                self.weights["ladder"] * self.members[player_tag]["ladder"]
-                + self.weights["currentWar"] * self.members[player_tag]["current_war"]
-                + self.weights["previousSeasonLeague"] * self.members[player_tag]["previous_league"]
-                + self.weights["currentSeasonLeague"] * self.members[player_tag]["current_league"]
-                + self.weights["previousSeasonTrophies"] * self.members[player_tag]["previous_trophies"]
-                + self.weights["currentSeasonTrophies"] * self.members[player_tag]["current_trophies"]
+                weights.ladder * self.members[player_tag]["ladder"]
+                + weights.currentWar * self.members[player_tag]["current_war"]
+                + weights.previousSeasonLeague * self.members[player_tag]["previous_league"]
+                + weights.currentSeasonLeague * self.members[player_tag]["current_league"]
+                + weights.previousSeasonTrophies * self.members[player_tag]["previous_trophies"]
+                + weights.currentSeasonTrophies * self.members[player_tag]["current_trophies"]
             )
             if self.members[player_tag]["war_history"] is not None:
-                self.members[player_tag]["rating"] += (
-                    self.weights["warHistory"] * self.members[player_tag]["war_history"]
-                )
+                self.members[player_tag]["rating"] += weights.warHistory * self.members[player_tag]["war_history"]
             else:
-                self.members[player_tag]["rating"] += self.weights["warHistory"] * new_player_warLog_rating
+                self.members[player_tag]["rating"] += weights.warHistory * self.params.newPlayerWarLogRating
 
         performance = pd.DataFrame.from_dict(self.members, orient="index")
         performance = performance[
@@ -252,12 +253,12 @@ class EvaluationPerformer:
         LOGGER.info("Performance rating calculated according to the following formula:")
         LOGGER.info(
             "rating "
-            f"= {self.weights['ladder']:.2f}*ladder "
-            f"+ {self.weights['currentWar']:.2f}*currentWar "
-            f"+ {self.weights['previousSeasonLeague']:.2f}*previousLeague "
-            f"+ {self.weights['currentSeasonLeague']:.2f}*currentLeague "
-            f"+ {self.weights['previousSeasonTrophies']:.2f}*previousPathTrophies "
-            f"+ {self.weights['currentSeasonTrophies']:.2f}*currentPathTrophies "
-            f"+ {self.weights['warHistory']:.2f}*warHistory +"
+            f"= {weights.ladder:.2f}*ladder "
+            f"+ {weights.currentWar:.2f}*currentWar "
+            f"+ {weights.previousSeasonLeague:.2f}*previousLeague "
+            f"+ {weights.currentSeasonLeague:.2f}*currentLeague "
+            f"+ {weights.previousSeasonTrophies:.2f}*previousPathTrophies "
+            f"+ {weights.currentSeasonTrophies:.2f}*currentPathTrophies "
+            f"+ {weights.warHistory:.2f}*warHistory"
         )
         return performance.sort_values("rating", ascending=False)

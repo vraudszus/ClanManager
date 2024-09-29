@@ -48,15 +48,15 @@ properties:
         type: number
         minimum: 0
         maximum: 1
-      required:
-        - ladder
-        - warHistory
-        - currentWar
-        - previousSeasonLeague
-        - previousSeasonTrophies
-        - currentSeasonLeague
-        - currentSeasonTrophies
-      additionalProperties: false
+    required:
+      - ladder
+      - warHistory
+      - currentWar
+      - previousSeasonLeague
+      - previousSeasonTrophies
+      - currentSeasonLeague
+      - currentSeasonTrophies
+    additionalProperties: false
 
   newPlayerWarLogRating:
     description: "war history rating to use when player has not played any wars with this clan"
@@ -113,7 +113,7 @@ properties:
         description: "name of sheet with excuses table"
         type: string
     required:
-      - ranking
+      - rating
       - excuses
     additionalProperties: false
 

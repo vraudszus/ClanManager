@@ -1,4 +1,3 @@
-import math
 from pathlib import Path
 
 import jsonschema
@@ -11,7 +10,7 @@ SCHEMA_FILE: Path = ROOT_DIR / "data" / "ranking_parameters_model.yaml"
 
 
 class RankingParameterValidator:
-    def __init__(self, ranking_parameters: str):
+    def __init__(self, ranking_parameters):
         self.parameters = yaml.safe_load(ranking_parameters)
         self.schema = yaml.safe_load(open(SCHEMA_FILE))
 
@@ -20,7 +19,6 @@ class RankingParameterValidator:
         parameters = RankingParameters(**self.parameters)
 
         # rating weights must add up to 1
-        if not math.isclose(sum(parameters.ratingWeights.sum_of_weights()), 1):
-            raise ValueError("Sum of ratingWeights must be 1.")
+        parameters.ratingWeights.check()
 
         return parameters

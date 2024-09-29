@@ -1,6 +1,5 @@
 import logging
 import os.path
-from pathlib import Path
 
 import pandas as pd
 import numpy as np
@@ -11,6 +10,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+from player_ranking.constants import ROOT_DIR
+from player_ranking.ranking_parameters import GoogleSheets
+
 LOGGER = logging.getLogger(__name__)
 ACCESS_TOKEN_FILENAME: str = ".gsheets_access_token.json"
 
@@ -18,10 +20,11 @@ ACCESS_TOKEN_FILENAME: str = ".gsheets_access_token.json"
 class GSheetsWrapper:
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    def __init__(self, refresh_token: str, spreadSheetId: str, root_path: Path) -> None:
-        self.access_token_path: str = (root_path / ACCESS_TOKEN_FILENAME).as_posix()
-        self.spreadSheetId = spreadSheetId
+    def __init__(self, refresh_token: str, spreadsheet_id: str, sheet_names: GoogleSheets) -> None:
+        self.access_token_path: str = (ROOT_DIR / ACCESS_TOKEN_FILENAME).as_posix()
+        self.spreadsheet_id = spreadsheet_id
         self.service = self.connect_to_service(refresh_token)
+        self.sheet_names = sheet_names
 
     def connect_to_service(self, refresh_token: str):
         creds = None
@@ -46,7 +49,7 @@ class GSheetsWrapper:
     def _get_sheet_by_name(self, sheet_name: str):
         sheets_with_properties = (
             self.service.spreadsheets()
-            .get(spreadsheetId=self.spreadSheetId, fields="sheets.properties")
+            .get(spreadsheetId=self.spreadsheet_id, fields="sheets.properties")
             .execute()
             .get("sheets")
         )
@@ -56,10 +59,10 @@ class GSheetsWrapper:
                     return sheet["properties"]["sheetId"]
 
     def _clear_sheet(self, sheet_name: str):
-        request = self.service.spreadsheets().values().clear(spreadsheetId=self.spreadSheetId, range=sheet_name)
+        request = self.service.spreadsheets().values().clear(spreadsheetId=self.spreadsheet_id, range=sheet_name)
         return request.execute()
 
-    def write_df_to_sheet(self, df, sheet_name: str):
+    def write_sheet(self, df, sheet_name: str):
         self._clear_sheet(sheet_name)
         csv_string = df.to_csv(sep=";", float_format="%.0f")
         body = {
@@ -78,12 +81,17 @@ class GSheetsWrapper:
                 }
             ]
         }
-        request = self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadSheetId, body=body)
+        request = self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body)
         response = request.execute()
         return response
 
-    def get_excuses(self, sheet_name: str) -> pd.DataFrame:
-        result = self.service.spreadsheets().values().get(spreadsheetId=self.spreadSheetId, range=sheet_name).execute()
+    def get_excuses(self) -> pd.DataFrame:
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .get(spreadsheetId=self.spreadsheet_id, range=self.sheet_names.excuses)
+            .execute()
+        )
         data = result.get("values", [])
         # pad short rows to prevent mismatch between column header count and data columns
         data = list(zip(*itertools.zip_longest(*data)))
@@ -92,8 +100,8 @@ class GSheetsWrapper:
         else:
             return pd.DataFrame()
 
-    def update_excuse_sheet(self, members, current_war, war_history: pd.DataFrame, not_in_clan_str, sheet_name):
-        excuses = self.get_excuses(sheet_name)
+    def update_excuse_sheet(self, members, current_war, war_history: pd.DataFrame, not_in_clan_str):
+        excuses = self.get_excuses()
 
         def empty_cells_with_numbers(x):
             try:
@@ -125,12 +133,12 @@ class GSheetsWrapper:
             last_recorded_cw = -1
 
         if last_recorded_cw not in war_history.columns.tolist():
-            LOGGER.info(f"Write complety new {sheet_name}")
+            LOGGER.info(f"Write complety new {self.sheet_names.excuses}")
             excuses = wars
         else:
             columns_to_shift = war_history.columns.tolist().index(last_recorded_cw)
             if columns_to_shift > 0:
-                LOGGER.info(f"Shift existing {sheet_name} by {columns_to_shift} columns")
+                LOGGER.info(f"Shift existing {self.sheet_names.excuses} by {columns_to_shift} columns")
                 excuses = pd.concat(
                     [
                         excuses.iloc[:, :1],
@@ -142,10 +150,10 @@ class GSheetsWrapper:
                 excuses.columns = wars.columns.insert(0, "name")
                 tags_to_remove = excuses[excuses.eq(not_in_clan_str).sum(1) >= 11].index
                 if not tags_to_remove.empty:
-                    LOGGER.info(f"Removed tags {tags_to_remove.tolist()} from sheet {sheet_name}")
+                    LOGGER.info(f"Removed tags {tags_to_remove.tolist()} from sheet {self.sheet_names.excuses}")
                     excuses.drop(tags_to_remove, inplace=True)
             else:
-                LOGGER.info(f"Restore old {sheet_name}")
+                LOGGER.info(f"Restore old {self.sheet_names.excuses}")
                 for tag in members:
                     # add rows for new players
                     if tag not in excuses.index:
@@ -160,4 +168,4 @@ class GSheetsWrapper:
             if tag in members:
                 excuses.at[tag, "name"] = members[tag]["name"]
         excuses.sort_values(by="name", inplace=True)
-        return self.write_df_to_sheet(excuses, sheet_name)
+        return self.write_sheet(excuses, self.sheet_names.excuses)

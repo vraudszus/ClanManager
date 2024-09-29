@@ -1,22 +1,23 @@
 import json
 import logging
 import os
-import yaml
 
 from player_ranking import crApiWrapper
 from player_ranking import historyWrapper
 from player_ranking.constants import ROOT_DIR
 from player_ranking.evalutation_performer import EvaluationPerformer
 from player_ranking.gsheetsApiWrapper import GSheetsWrapper
+from player_ranking.ranking_parameters import RankingParameters, PromotionDemotionRequirements
+from player_ranking.ranking_parameters_validation import RankingParameterValidator
 
 LOGGER = logging.getLogger(__name__)
 
 
-def print_pending_rank_changes(members, war_log, requirements):
+def print_pending_rank_changes(members, war_log, requirements: PromotionDemotionRequirements):
     war_log = war_log.copy()
     war_log = war_log.drop("mean", axis=1)
-    min_fame = requirements["minFameForCountingWar"]
-    min_wars = requirements["minCountingWars"]
+    min_fame = requirements.minFameForCountingWar
+    min_wars = requirements.minCountingWars
     # promotions
     only_members = dict((k, v["name"]) for (k, v) in members.items() if v["role"] == "member")
     promotion_deserving_logs = war_log[war_log >= min_fame].count(axis="columns")
@@ -36,59 +37,49 @@ def print_pending_rank_changes(members, war_log, requirements):
 
 
 def perform_evaluation(plot: bool):
-    props = yaml.safe_load(open(ROOT_DIR / "ranking_parameters.yaml", "r"))
-    clan_tag = props["clanTag"]
-    rating_coefficients = props["ratingWeights"]
-    new_player_war_log_rating = props["newPlayerWarLogRating"]
-    valid_excuses = props["excuses"]
-    not_in_clan_excuse = valid_excuses["notInClanExcuse"]
-    pro_demotion_requirements = props["promotionDemotionRequirements"]
-    rating_file = props["ratingFile"]
-    rating_history_file = props["ratingHistoryFile"]
-    rating_history_image = props["ratingHistoryImage"]
-    rating_gsheet = props["googleSheets"]["rating"]
-    excuses_gsheet = props["googleSheets"]["excuses"]
-    ignoreWars = props["ignoreWars"]
-    threeDayWars = props["threeDayWars"]
+    params: RankingParameters = RankingParameterValidator(open(ROOT_DIR / "ranking_parameters.yaml")).validate()
 
     cr_api_token = os.getenv("CR_API_TOKEN")
-    gsheets_refresh_token = json.loads(os.getenv("GSHEETS_REFRESH_TOKEN"))
+    gsheets_refresh_token_raw = os.getenv("GSHEETS_REFRESH_TOKEN")
     gsheets_spreadsheet_id = os.getenv("GSHEET_SPREADSHEET_ID")
-    if not cr_api_token or not gsheets_refresh_token or not gsheets_spreadsheet_id:
+    if not cr_api_token or not gsheets_refresh_token_raw or not gsheets_spreadsheet_id:
         raise KeyError("Required secrets not found in environment.")
+    gsheets_refresh_token = json.loads(gsheets_refresh_token_raw)
 
-    LOGGER.info(f"Evaluating performance of players from {clan_tag}...")
-    members = crApiWrapper.get_current_members(clan_tag, cr_api_token)
-    war_log = crApiWrapper.get_war_statistics(clan_tag, members, cr_api_token)
-    current_war = crApiWrapper.get_current_river_race(clan_tag, cr_api_token)
+    LOGGER.info(f"Evaluating performance of players from {params.clanTag}...")
+    members = crApiWrapper.get_current_members(params.clanTag, cr_api_token)
+    war_log = crApiWrapper.get_war_statistics(params.clanTag, members, cr_api_token)
+    current_war = crApiWrapper.get_current_river_race(params.clanTag, cr_api_token)
     path = crApiWrapper.get_path_statistics(members, cr_api_token)
 
-    gSheetsWrapper = GSheetsWrapper(
-        gsheets_refresh_token,
-        gsheets_spreadsheet_id,
-        ROOT_DIR,
+    gsheets_wrapper = GSheetsWrapper(
+        refresh_token=gsheets_refresh_token,
+        spreadsheet_id=gsheets_spreadsheet_id,
+        sheet_names=params.googleSheets,
     )
-    excusesDf = gSheetsWrapper.get_excuses(excuses_gsheet)
+    excuses_df = gsheets_wrapper.get_excuses()
 
-    evaluationPerformer = EvaluationPerformer(members, current_war, war_log, path, rating_coefficients)
-    evaluationPerformer.adjust_war_weights()
-    evaluationPerformer.adjust_season_weights()
-    evaluationPerformer.account_for_shorter_wars(threeDayWars)
-    evaluationPerformer.ignore_selected_wars(ignoreWars)
-    evaluationPerformer.accept_excuses(valid_excuses, excusesDf)
-    performance = evaluationPerformer.evaluate_performance(new_player_war_log_rating)
+    evaluation_performer = EvaluationPerformer(members, current_war, war_log, path, params)
+    evaluation_performer.adjust_war_weights()
+    evaluation_performer.adjust_season_weights()
+    evaluation_performer.account_for_shorter_wars()
+    evaluation_performer.ignore_selected_wars()
+    evaluation_performer.accept_excuses(excuses_df)
+    performance = evaluation_performer.evaluate_performance()
 
-    historyWrapper.append_rating_history(ROOT_DIR / rating_history_file, performance["rating"])
+    historyWrapper.append_rating_history(ROOT_DIR / params.ratingHistoryFile, performance["rating"])
     if plot:
-        historyWrapper.plot_rating_history(ROOT_DIR / rating_history_file, members, ROOT_DIR / rating_history_image)
-    print_pending_rank_changes(members, war_log, pro_demotion_requirements)
+        historyWrapper.plot_rating_history(
+            ROOT_DIR / params.ratingHistoryFile, members, ROOT_DIR / params.ratingHistoryImage
+        )
+    print_pending_rank_changes(members, war_log, params.promotionDemotionRequirements)
 
     performance = performance.reset_index(drop=True)
     performance.index += 1
     performance.loc["mean"] = performance.iloc[:, 2:].mean()
     performance.loc["median"] = performance.iloc[:-1, 2:].median()
-    performance.to_csv(ROOT_DIR / rating_file, sep=";", float_format="%.0f")
+    performance.to_csv(ROOT_DIR / params.ratingFile, sep=";", float_format="%.0f")
     print(performance)
 
-    gSheetsWrapper.write_df_to_sheet(performance, rating_gsheet)
-    gSheetsWrapper.update_excuse_sheet(members, current_war, war_log, not_in_clan_excuse, excuses_gsheet)
+    gsheets_wrapper.write_sheet(performance, params.googleSheets.rating)
+    gsheets_wrapper.update_excuse_sheet(members, current_war, war_log, params.excuses.notInClanExcuse)
