@@ -36,11 +36,11 @@
     Follow [this](https://developers.google.com/sheets/api/quickstart/python) guide until you have the
     `credentials.json` file. Copy&Paste its contents to this variable.
   - `GSHEET_SPREADSHEET_ID` ID of a Google spreadsheet with two empty sheets named after
-    `googleSheets.rating` and `googleSheets.excuses` in [properties.yaml](cli-client/ranking_parameters.yaml)
+    `googleSheets.rating` and `googleSheets.excuses` in [ranking_parameters.yaml](cli-client/ranking_parameters.yaml)
 
 ## Usage
 
-First, make sure to update the value of `clanTag` in [properties.yaml](cli-client/ranking_parameters.yaml)
+First, make sure to update the value of `clanTag` in [ranking_parameters.yaml](cli-client/ranking_parameters.yaml)
 and customize the remaining settings to your liking.
 
     Example usage:
@@ -59,7 +59,7 @@ and rerunning the ranking computation after adding new excused in the Google She
 
 ## Evaluation criteria customization
 
-Using the `properties.yaml` file you can customize:
+Using the `ranking_parameters.yaml` file you can customize:
 
 - The clan you want to check
 - The weights the rating should apply to different metrics
