@@ -3,7 +3,7 @@ import yaml
 import pandas as pd
 import matplotlib.pyplot as plt
 
-props = yaml.safe_load(open("properties.yaml", "r"))
+props = yaml.safe_load(open("ranking_parameters.yaml", "r"))
 clan_tag = props["clanTag"]
 cr_api_url = props["crApiUrl"]
 cr_token = props["apiTokens"]["crApiTokenPath"]

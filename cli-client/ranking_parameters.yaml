@@ -1,6 +1,6 @@
 clanTag: "#GP9GRQ"
 
-ratingCoefficients:
+ratingWeights:
   # must sum up to 1.0 and values must be >= 0
   ladder: 0.075
   warHistory: 0.4
@@ -13,11 +13,11 @@ ratingCoefficients:
 # must be between 0 and 1000
 newPlayerWarLogRating: 500
 
-promotion_demotion_requirements:
+promotionDemotionRequirements:
   minFameForCountingWar: 2700
   minCountingWars: 8
 
-valid_excuses:
+excuses:
   # These values can be entered in your "excuses" spreadsheet and/or are inserted by the system.
   # The values of "notInClanExcuse" and "newPlayerExcuse" can be used to make the system ignore
   # river races in the rating calculation on a per-player basis.
@@ -51,3 +51,4 @@ threeDayWars:
   - "97.2"
   - "101.2"
   - "106.2"
+  - "112.0"

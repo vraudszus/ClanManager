@@ -1,15 +1,14 @@
 import json
 import logging
 import os
-from pathlib import Path
 import yaml
 
 from player_ranking import crApiWrapper
 from player_ranking import historyWrapper
+from player_ranking.constants import ROOT_DIR
 from player_ranking.evalutation_performer import EvaluationPerformer
 from player_ranking.gsheetsApiWrapper import GSheetsWrapper
 
-ROOT_DIR = Path(__file__).parent.parent.parent
 LOGGER = logging.getLogger(__name__)
 
 
@@ -37,13 +36,13 @@ def print_pending_rank_changes(members, war_log, requirements):
 
 
 def perform_evaluation(plot: bool):
-    props = yaml.safe_load(open(ROOT_DIR / "properties.yaml", "r"))
+    props = yaml.safe_load(open(ROOT_DIR / "ranking_parameters.yaml", "r"))
     clan_tag = props["clanTag"]
-    rating_coefficients = props["ratingCoefficients"]
+    rating_coefficients = props["ratingWeights"]
     new_player_war_log_rating = props["newPlayerWarLogRating"]
-    valid_excuses = props["valid_excuses"]
+    valid_excuses = props["excuses"]
     not_in_clan_excuse = valid_excuses["notInClanExcuse"]
-    pro_demotion_requirements = props["promotion_demotion_requirements"]
+    pro_demotion_requirements = props["promotionDemotionRequirements"]
     rating_file = props["ratingFile"]
     rating_history_file = props["ratingHistoryFile"]
     rating_history_image = props["ratingHistoryImage"]

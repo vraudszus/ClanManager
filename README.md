@@ -36,11 +36,11 @@
     Follow [this](https://developers.google.com/sheets/api/quickstart/python) guide until you have the
     `credentials.json` file. Copy&Paste its contents to this variable.
   - `GSHEET_SPREADSHEET_ID` ID of a Google spreadsheet with two empty sheets named after
-    `googleSheets.rating` and `googleSheets.excuses` in [properties.yaml](cli-client/properties.yaml)
+    `googleSheets.rating` and `googleSheets.excuses` in [properties.yaml](cli-client/ranking_parameters.yaml)
 
 ## Usage
 
-First, make sure to update the value of `clanTag` in [properties.yaml](cli-client/properties.yaml)
+First, make sure to update the value of `clanTag` in [properties.yaml](cli-client/ranking_parameters.yaml)
 and customize the remaining settings to your liking.
 
     Example usage:

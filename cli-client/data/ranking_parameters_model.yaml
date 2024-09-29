@@ -1,0 +1,161 @@
+$schema: "https://json-schema.org/draft/2020-12/schema"
+title: "Player-Ranking Parameters"
+description: "YAML file that provides parameters to the player-ranking computation."
+type: object
+
+properties:
+  clanTag:
+    description: "the clan to compute the rating for"
+    type: string
+    pattern: "#[0-9A-Z]+"
+
+  ratingWeights:
+    description: "the weights to use in the rating computation"
+    type: object
+    properties:
+      ladder:
+        description: "weight for trophy road score"
+        type: number
+        minimum: 0
+        maximum: 1
+      warHistory:
+        description: "weight for last 10 wars"
+        type: number
+        minimum: 0
+        maximum: 1
+      currentWar:
+        description: "weight for current war"
+        type: number
+        minimum: 0
+        maximum: 1
+      previousSeasonLeague:
+        description: "weight for PoL league reached in previous season"
+        type: number
+        minimum: 0
+        maximum: 1
+      previousSeasonTrophies:
+        description: "weight for ultimate champion trophies reached in previous season"
+        type: number
+        minimum: 0
+        maximum: 1
+      currentSeasonLeague:
+        description: "weight for PoL league reached in current season"
+        type: number
+        minimum: 0
+        maximum: 1
+      currentSeasonTrophies:
+        description: "weight for ultimate champion trophies reached in current season"
+        type: number
+        minimum: 0
+        maximum: 1
+      required:
+        - ladder
+        - warHistory
+        - currentWar
+        - previousSeasonLeague
+        - previousSeasonTrophies
+        - currentSeasonLeague
+        - currentSeasonTrophies
+      additionalProperties: false
+
+  newPlayerWarLogRating:
+    description: "war history rating to use when player has not played any wars with this clan"
+    type: integer
+    minimum: 0
+    maximum: 1000
+
+  promotionDemotionRequirements:
+    description: "when to recommend a member/elder for promotion/demotion"
+    type: object
+    properties:
+      minFameForCountingWar:
+        description: "war points that need to be reached for the war to count"
+        type: integer
+        minimum: 0
+        maximum: 3600
+      minCountingWars:
+        description: "number of completed wars that fame condition needs to be met for"
+        type: integer
+        minimum: 0
+        maximum: 10
+    required:
+      - minFameForCountingWar
+      - minCountingWars
+    additionalProperties: false
+
+  excuses:
+    description: "accepted reasons for missing a war"
+    type: object
+    properties:
+      notInClanExcuse:
+        description: "player wasn't in clan during war -> ignore war"
+        type: string
+      newPlayerExcuse:
+        description: "player didn't have to chance to play all days -> ignore war"
+        type: string
+      personalExcuse:
+        description: "player was excused for war -> count as 1600 fame war"
+        type: string
+    required:
+      - notInClanExcuse
+      - newPlayerExcuse
+      - personalExcuse
+    additionalProperties: false
+
+  googleSheets:
+    description: "google spreadsheet must contain these sheets"
+    type: object
+    properties:
+      rating:
+        description: "name of sheet with rating table"
+        type: string
+      excuses:
+        description: "name of sheet with excuses table"
+        type: string
+    required:
+      - ranking
+      - excuses
+    additionalProperties: false
+
+  ratingFile:
+    description: "location to which the rating table should be written"
+    type: string
+
+  ratingHistoryFile:
+    description: "file to which the new rating should be appended"
+    type: string
+
+  ratingHistoryImage:
+    description: "location for rating history graph"
+    type: string
+
+  ignoreWars:
+    description: "wars to ignore for the entire clan"
+    type: array
+    items:
+      type: string
+      pattern: "[0-9]+\\.[0-4]"
+    uniqueItems: true
+
+  threeDayWars:
+    description: "3 day wars that should be scaled up to 4 days"
+    type: array
+    items:
+      type: string
+      pattern: "[0-9]+\\.[0-4]"
+    uniqueItems: true
+
+required:
+  - clanTag
+  - ratingWeights
+  - newPlayerWarLogRating
+  - promotionDemotionRequirements
+  - excuses
+  - googleSheets
+  - ratingFile
+  - ratingHistoryFile
+  - ratingHistoryImage
+  - ignoreWars
+  - threeDayWars
+
+additionalProperties: false
