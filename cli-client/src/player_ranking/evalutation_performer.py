@@ -87,7 +87,7 @@ class EvaluationPerformer:
     def accept_excuses(self, excuses_df):
         def handle_excuse(player_name: str, old_fame: int, war_id: str, factor: float = 1):
             excuse = excuses_df.at[tag, war_id]
-            if not excuse or not math.isnan(old_fame):
+            if not excuse or math.isnan(old_fame):
                 return old_fame
             self.params.excuses.check_excuse(excuse)
             if self.params.excuses.should_ignore_war(excuse):
