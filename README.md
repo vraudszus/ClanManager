@@ -29,7 +29,15 @@
 - [Python 3.10](https://www.python.org/downloads/) must be installed.
 - [Poetry](https://python-poetry.org/docs/#installation) must be installed.
 - Install project `$ poetry install` after navigating to the cloned directory.
-- Add your secrets to [.env](cli-client/.env)
+- To provide the program with the necessary credentials, create a new file `cli-client/.env` with the following contents:
+
+```bash
+CR_API_TOKEN=
+GSHEETS_REFRESH_TOKEN=
+GSHEET_SPREADSHEET_ID=
+```
+
+- Add your credentials to `cli-client/.env`
   - `CR_API_TOKEN` [Clash Royale API token](https://developer.clashroyale.com/#/)
     (use the [RoyalAPI proxy](https://docs.royaleapi.com/proxy.html) unless you have a static IP)
   - `GSHEETS_REFRESH_TOKEN` The Google Sheets API credentials for writing results.
