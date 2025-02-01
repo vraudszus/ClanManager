@@ -39,11 +39,9 @@ def print_pending_rank_changes(members, war_log, requirements: PromotionDemotion
 def perform_evaluation(plot: bool):
     params: RankingParameters = RankingParameterValidator(open(ROOT_DIR / "ranking_parameters.yaml")).validate()
 
-    cr_api_token = os.getenv("CR_API_TOKEN")
-    gsheets_refresh_token_raw = os.getenv("GSHEETS_REFRESH_TOKEN")
-    gsheets_spreadsheet_id = os.getenv("GSHEET_SPREADSHEET_ID")
-    if not cr_api_token or not gsheets_refresh_token_raw or not gsheets_spreadsheet_id:
-        raise KeyError("Required secrets not found in environment.")
+    cr_api_token = read_env_variable("CR_API_TOKEN")
+    gsheets_refresh_token_raw = read_env_variable("GSHEETS_REFRESH_TOKEN")
+    gsheets_spreadsheet_id = read_env_variable("GSHEET_SPREADSHEET_ID")
     gsheets_refresh_token = json.loads(gsheets_refresh_token_raw)
 
     LOGGER.info(f"Evaluating performance of players from {params.clanTag}...")
@@ -83,3 +81,12 @@ def perform_evaluation(plot: bool):
 
     gsheets_wrapper.write_sheet(performance, params.googleSheets.rating)
     gsheets_wrapper.update_excuse_sheet(members, current_war, war_log, params.excuses.notInClanExcuse)
+
+
+def read_env_variable(env_var: str) -> str:
+    var = os.getenv(env_var)
+    if not var:
+        raise EnvironmentError(
+            f"The environment variable '{env_var}' is missing. Please check the README.md for how to configure it."
+        )
+    return var
