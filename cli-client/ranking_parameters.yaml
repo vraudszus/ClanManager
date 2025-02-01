@@ -42,6 +42,10 @@ ignoreWars:
   - "86.2"
   - "86.1"
   - "86.0"
+  - "115.1"
+  - "115.2"
+  - "115.3"
+  - "115.4"
 
 # River races that your clan won in just 3 days
 # Results will be scaled up to 4 days to ensure a fair comparison
