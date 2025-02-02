@@ -18,7 +18,7 @@ LOGGER = logging.getLogger(__name__)
 ACCESS_TOKEN_FILENAME: str = ".gsheets_access_token.json"
 
 
-class GSheetsWrapper:
+class GSheetsAPIClient:
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
     def __init__(self, refresh_token: str, spreadsheet_id: str, sheet_names: GoogleSheets) -> None:

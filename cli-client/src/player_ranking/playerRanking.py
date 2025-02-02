@@ -2,12 +2,12 @@ import json
 import logging
 import os
 
-from player_ranking import crApiWrapper
+from player_ranking import cr_api_client
 from player_ranking import historyWrapper
 from player_ranking.models.clan import Clan
 from player_ranking.constants import ROOT_DIR
 from player_ranking.evaluation_performer import EvaluationPerformer
-from player_ranking.gsheetsApiWrapper import GSheetsWrapper
+from player_ranking.gsheets_api_client import GSheetsAPIClient
 from player_ranking.models.ranking_parameters import RankingParameters, PromotionDemotionRequirements
 from player_ranking.models.ranking_parameters_validation import RankingParameterValidator
 
@@ -46,17 +46,17 @@ def perform_evaluation(plot: bool):
     gsheets_refresh_token = json.loads(gsheets_refresh_token_raw)
 
     LOGGER.info(f"Evaluating performance of players from {params.clanTag}...")
-    clan = crApiWrapper.get_current_members(params.clanTag, cr_api_token)
-    war_log = crApiWrapper.get_war_statistics(params.clanTag, clan, cr_api_token)
-    current_war = crApiWrapper.get_current_river_race(params.clanTag, cr_api_token)
-    crApiWrapper.get_path_statistics(clan, cr_api_token)
+    clan = cr_api_client.get_current_members(params.clanTag, cr_api_token)
+    war_log = cr_api_client.get_war_statistics(params.clanTag, clan, cr_api_token)
+    current_war = cr_api_client.get_current_river_race(params.clanTag, cr_api_token)
+    cr_api_client.get_path_statistics(clan, cr_api_token)
 
-    gsheets_wrapper = GSheetsWrapper(
+    gsheets_client = GSheetsAPIClient(
         refresh_token=gsheets_refresh_token,
         spreadsheet_id=gsheets_spreadsheet_id,
         sheet_names=params.googleSheets,
     )
-    excuses_df = gsheets_wrapper.get_excuses()
+    excuses_df = gsheets_client.get_excuses()
 
     performance = EvaluationPerformer(clan, current_war, war_log, params, excuses_df).evaluate()
 
@@ -74,8 +74,8 @@ def perform_evaluation(plot: bool):
     performance.to_csv(ROOT_DIR / params.ratingFile, sep=";", float_format="%.0f")
     print(performance)
 
-    gsheets_wrapper.write_sheet(performance, params.googleSheets.rating)
-    gsheets_wrapper.update_excuse_sheet(clan, current_war, war_log, params.excuses.notInClanExcuse)
+    gsheets_client.write_sheet(performance, params.googleSheets.rating)
+    gsheets_client.update_excuse_sheet(clan, current_war, war_log, params.excuses.notInClanExcuse)
 
 
 def read_env_variable(env_var: str) -> str:
