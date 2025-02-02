@@ -24,6 +24,7 @@ class EvaluationPerformer:
         warLog: pd.DataFrame,
         path: pd.DataFrame,
         ranking_parameters: RankingParameters,
+        excuses: pd.DataFrame,
     ) -> None:
         self.members = members
         self.currentWar = currentWar
@@ -31,6 +32,15 @@ class EvaluationPerformer:
         self.path = path
         self.warProgress = None
         self.params = ranking_parameters
+        self.excuses: pd.DataFrame = excuses
+
+    def evaluate(self) -> pd.DataFrame:
+        self.adjust_war_weights()
+        self.adjust_season_weights()
+        self.account_for_shorter_wars()
+        self.ignore_selected_wars()
+        self.accept_excuses()
+        return self.evaluate_performance()
 
     def adjust_war_weights(self):
         weights = self.params.ratingWeights
@@ -84,9 +94,9 @@ class EvaluationPerformer:
         shorterWarsInHistory = list(set(self.params.threeDayWars) & set(self.warLog.columns))
         self.warLog.loc[:, shorterWarsInHistory] *= 4 / 3
 
-    def accept_excuses(self, excuses_df):
+    def accept_excuses(self):
         def handle_excuse(player_name: str, old_fame: int, war_id: str, factor: float = 1):
-            excuse = excuses_df.at[tag, war_id]
+            excuse = self.excuses.at[tag, war_id]
             if not excuse or math.isnan(old_fame):
                 return old_fame
             self.params.excuses.check_excuse(excuse)
@@ -100,7 +110,7 @@ class EvaluationPerformer:
 
         for tag in self.members:
             name = self.members[tag]["name"]
-            if tag in excuses_df.index:
+            if tag in self.excuses.index:
                 # current river race
                 self.currentWar.at[tag] = handle_excuse(
                     player_name=name,
@@ -110,7 +120,7 @@ class EvaluationPerformer:
                 )
                 if tag in self.warLog.index:
                     for war, fame in self.warLog.loc[tag].items():
-                        if war in excuses_df.columns:
+                        if war in self.excuses.columns:
                             # river race history
                             self.warLog.loc[tag, war] = handle_excuse(
                                 player_name=name,

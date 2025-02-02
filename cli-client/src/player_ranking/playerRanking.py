@@ -57,13 +57,7 @@ def perform_evaluation(plot: bool):
     )
     excuses_df = gsheets_wrapper.get_excuses()
 
-    evaluation_performer = EvaluationPerformer(members, current_war, war_log, path, params)
-    evaluation_performer.adjust_war_weights()
-    evaluation_performer.adjust_season_weights()
-    evaluation_performer.account_for_shorter_wars()
-    evaluation_performer.ignore_selected_wars()
-    evaluation_performer.accept_excuses(excuses_df)
-    performance = evaluation_performer.evaluate_performance()
+    performance = EvaluationPerformer(members, current_war, war_log, path, params, excuses_df).evaluate()
 
     historyWrapper.append_rating_history(ROOT_DIR / params.ratingHistoryFile, performance["rating"])
     if plot:
