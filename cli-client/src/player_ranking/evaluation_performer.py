@@ -5,14 +5,14 @@ from typing import List
 import numpy as np
 import pandas as pd
 
-from player_ranking.clan import Clan
+from player_ranking.models.clan import Clan
 from player_ranking.datetime_util import (
     get_next_first_monday_10_AM,
     get_previous_first_monday_10_AM,
     get_time_since_last_thursday_10_Am,
 )
 from player_ranking.excuse_acceptor import ExcuseAcceptor
-from player_ranking.ranking_parameters import RankingParameters
+from player_ranking.models.ranking_parameters import RankingParameters
 
 LOGGER = logging.getLogger(__name__)
 
@@ -210,6 +210,7 @@ class EvaluationPerformer:
             )
 
         performance = pd.DataFrame([player.__dict__ for player in self.clan.get_members()])
+        performance = performance.set_index("tag")
         performance = performance[
             [
                 "name",

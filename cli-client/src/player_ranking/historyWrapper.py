@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from labellines import labelLines
 from cycler import cycler
 
-from player_ranking.clan import Clan
+from player_ranking.models.clan import Clan
 
 DATETIME_FORMAT = "%d.%m.%Y %H:%M:%S"
 

@@ -4,7 +4,7 @@ from typing import Tuple
 import requests
 import pandas as pd
 
-from player_ranking.clan import Clan, ClanMember
+from player_ranking.models.clan import Clan, ClanMember
 
 # URL of the proxy provided by RoyaleAPI.com
 # Alternatively you can use the official URL "https://api.clashroyale.com/v1"

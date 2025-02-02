@@ -4,12 +4,12 @@ import os
 
 from player_ranking import crApiWrapper
 from player_ranking import historyWrapper
-from player_ranking.clan import Clan
+from player_ranking.models.clan import Clan
 from player_ranking.constants import ROOT_DIR
 from player_ranking.evaluation_performer import EvaluationPerformer
 from player_ranking.gsheetsApiWrapper import GSheetsWrapper
-from player_ranking.ranking_parameters import RankingParameters, PromotionDemotionRequirements
-from player_ranking.ranking_parameters_validation import RankingParameterValidator
+from player_ranking.models.ranking_parameters import RankingParameters, PromotionDemotionRequirements
+from player_ranking.models.ranking_parameters_validation import RankingParameterValidator
 
 LOGGER = logging.getLogger(__name__)
 

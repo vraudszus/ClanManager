@@ -10,9 +10,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from player_ranking.clan import Clan
+from player_ranking.models.clan import Clan
 from player_ranking.constants import ROOT_DIR
-from player_ranking.ranking_parameters import GoogleSheets
+from player_ranking.models.ranking_parameters import GoogleSheets
 
 LOGGER = logging.getLogger(__name__)
 ACCESS_TOKEN_FILENAME: str = ".gsheets_access_token.json"

@@ -4,7 +4,7 @@ import jsonschema
 import yaml
 
 from player_ranking.constants import ROOT_DIR
-from player_ranking.ranking_parameters import RankingParameters
+from player_ranking.models.ranking_parameters import RankingParameters
 
 SCHEMA_FILE: Path = ROOT_DIR / "data" / "ranking_parameters_model.yaml"
 

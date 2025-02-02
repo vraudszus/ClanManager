@@ -4,8 +4,8 @@ import math
 import numpy as np
 import pandas as pd
 
-from player_ranking.clan import Clan
-from player_ranking.ranking_parameters import Excuses
+from player_ranking.models.clan import Clan
+from player_ranking.models.ranking_parameters import Excuses
 
 LOGGER = logging.getLogger(__name__)
 
