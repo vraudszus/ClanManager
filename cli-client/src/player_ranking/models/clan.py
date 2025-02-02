@@ -1,27 +1,6 @@
-from dataclasses import dataclass
 from typing import Callable
 
-
-@dataclass
-class ClanMember:
-    rating: float
-    ladder: float
-    current_war: float
-    war_history: float
-    avg_fame: float
-
-    previous_league: float
-    current_league: float
-    previous_trophies: float
-    current_trophies: float
-    current_season: float
-    previous_season: float
-
-    def __init__(self, tag: str, name: str, role: str, trophies: int):
-        self.tag: str = tag
-        self.name: str = name
-        self.role: str = role
-        self.trophies: int = trophies
+from player_ranking.models.clan_member import ClanMember
 
 
 class Clan:
@@ -46,17 +25,11 @@ class Clan:
     def filter(self, condition: Callable[[ClanMember], bool]):
         return Clan({k: v for k, v in self._members.items() if condition(v)})
 
-    def get_min_or_max(self, minimum: bool, prop: str) -> ClanMember:
-        if not self._members:
-            raise ValueError("Cannot find min/max in an empty clan.")
+    def get_min(self, prop: str) -> int | float:
+        return getattr(min(self._members.values(), key=lambda v: getattr(v, prop)), prop)
 
-        try:
-            if minimum:
-                return min(self._members.values(), key=lambda v: getattr(v, prop))
-            else:
-                return max(self._members.values(), key=lambda v: getattr(v, prop))
-        except AttributeError:
-            raise ValueError(f"Field '{prop}' not found in ClanMember objects.")
+    def get_max(self, prop: str) -> int | float:
+        return getattr(max(self._members.values(), key=lambda v: getattr(v, prop)), prop)
 
     def __len__(self) -> int:
         return len(self._members)

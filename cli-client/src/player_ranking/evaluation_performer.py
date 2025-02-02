@@ -23,14 +23,12 @@ class EvaluationPerformer:
         clan: Clan,
         current_war: pd.Series,
         war_log: pd.DataFrame,
-        path: pd.DataFrame,
         ranking_parameters: RankingParameters,
         excuses: pd.DataFrame,
     ) -> None:
         self.clan: Clan = clan
         self.current_war = current_war
         self.war_log = war_log
-        self.path = path
         self.war_progress = None
         self.params = ranking_parameters
         self.excuses: pd.DataFrame = excuses
@@ -112,36 +110,36 @@ class EvaluationPerformer:
         current_min_fame = self.current_war.min()
         current_fame_range = current_max_fame - current_min_fame
 
-        previous_league_min = self.path["previous_season_league_number"].min()
-        previous_league_max = self.path["previous_season_league_number"].max()
-        current_league_min = self.path["current_season_league_number"].min()
-        current_league_max = self.path["current_season_league_number"].max()
+        previous_league_min = self.clan.get_min("previous_season_league_number")
+        previous_league_max = self.clan.get_max("previous_season_league_number")
+        current_league_min = self.clan.get_min("current_season_league_number")
+        current_league_max = self.clan.get_max("current_season_league_number")
 
         # only count league 10 players for trophy min, otherwise it will always be 0
-        previous_trophies_min = self.path.loc[
-            self.path["previous_season_league_number"] == 10, "previous_season_trophies"
-        ].min()
-        previous_trophies_max = self.path["previous_season_trophies"].max()
-        current_trophies_min = self.path.loc[
-            self.path["current_season_league_number"] == 10, "current_season_trophies"
-        ].min()
-        current_trophies_max = self.path["current_season_trophies"].max()
+        previous_trophies_min = self.clan.filter(lambda p: p.previous_season_league_number == 10).get_min(
+            "previous_season_trophies"
+        )
+        previous_trophies_max = self.clan.get_max("previous_season_trophies")
+        current_trophies_min = self.clan.filter(lambda p: p.current_season_league_number == 10).get_min(
+            "current_season_trophies"
+        )
+        current_trophies_max = self.clan.get_max("current_season_trophies")
 
-        trophies_min = self.clan.get_min_or_max(minimum=True, prop="trophies").trophies
-        trophies_max = self.clan.get_min_or_max(minimum=False, prop="trophies").trophies
+        trophies_min = self.clan.get_min("trophies")
+        trophies_max = self.clan.get_max("trophies")
 
         for player in self.clan.get_members():
             ladder_rating = (
                 (player.trophies - trophies_min) / (trophies_max - trophies_min) if trophies_max != trophies_min else 1
             )
 
-            previous_league = self.path.at[player.tag, "previous_season_league_number"]
+            previous_league = player.previous_season_league_number
             previous_league_rating = (
                 (previous_league - previous_league_min) / (previous_league_max - previous_league_min)
                 if previous_league_max != previous_league_min
                 else 1
             )
-            current_league = self.path.at[player.tag, "current_season_league_number"]
+            current_league = player.current_season_league_number
             current_league_rating = (
                 (current_league - current_league_min) / (current_league_max - current_league_min)
                 if current_league_max != current_league_min
@@ -152,7 +150,7 @@ class EvaluationPerformer:
             previous_trophies_rating = 0
             if previous_league == 10:
                 previous_trophies_rating = (
-                    (self.path.at[player.tag, "previous_season_trophies"] - previous_trophies_min)
+                    (player.previous_season_trophies - previous_trophies_min)
                     / (previous_trophies_max - previous_trophies_min)
                     if previous_trophies_max != previous_trophies_min
                     else 1
@@ -160,7 +158,7 @@ class EvaluationPerformer:
             current_trophies_rating = 0
             if current_league == 10:
                 current_trophies_rating = (
-                    (self.path.at[player.tag, "current_season_trophies"] - current_trophies_min)
+                    (player.current_season_trophies - current_trophies_min)
                     / (current_trophies_max - current_trophies_min)
                     if current_trophies_max != current_trophies_min
                     else 1

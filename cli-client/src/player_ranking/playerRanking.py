@@ -49,7 +49,7 @@ def perform_evaluation(plot: bool):
     clan = crApiWrapper.get_current_members(params.clanTag, cr_api_token)
     war_log = crApiWrapper.get_war_statistics(params.clanTag, clan, cr_api_token)
     current_war = crApiWrapper.get_current_river_race(params.clanTag, cr_api_token)
-    path = crApiWrapper.get_path_statistics(clan, cr_api_token)
+    crApiWrapper.get_path_statistics(clan, cr_api_token)
 
     gsheets_wrapper = GSheetsWrapper(
         refresh_token=gsheets_refresh_token,
@@ -58,7 +58,7 @@ def perform_evaluation(plot: bool):
     )
     excuses_df = gsheets_wrapper.get_excuses()
 
-    performance = EvaluationPerformer(clan, current_war, war_log, path, params, excuses_df).evaluate()
+    performance = EvaluationPerformer(clan, current_war, war_log, params, excuses_df).evaluate()
 
     historyWrapper.append_rating_history(ROOT_DIR / params.ratingHistoryFile, performance["rating"])
     if plot:

@@ -1,10 +1,10 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import Tuple
 import requests
 import pandas as pd
 
-from player_ranking.models.clan import Clan, ClanMember
+from player_ranking.models.clan import Clan
+from player_ranking.models.clan_member import ClanMember
 
 # URL of the proxy provided by RoyaleAPI.com
 # Alternatively you can use the official URL "https://api.clashroyale.com/v1"
@@ -67,25 +67,21 @@ def get_current_river_race(clan_tag, api_token):
 def get_path_statistics(clan: Clan, api_token):
     LOGGER.info(f"Fetching path of legends statistics for all {len(clan)} members...")
 
-    def get_stats_for_player(player_tag: str) -> Tuple[str, dict[str, int]]:
-        player = _get_json_from_api(f"/players/%23{player_tag[1:]}", api_token)
+    def get_stats_for_player(player: ClanMember):
+        raw_player = _get_json_from_api(f"/players/%23{player.tag[1:]}", api_token)
 
-        current_season = player["currentPathOfLegendSeasonResult"]
-        previous_season = player["lastPathOfLegendSeasonResult"]
+        current_season = raw_player["currentPathOfLegendSeasonResult"]
+        previous_season = raw_player["lastPathOfLegendSeasonResult"]
 
-        stats = {
-            "current_season_league_number": current_season["leagueNumber"],
-            "current_season_trophies": current_season["trophies"],
-            "previous_season_league_number": previous_season["leagueNumber"],
-            "previous_season_trophies": previous_season["trophies"],
-        }
-        return player_tag, stats
+        player.current_season_league_number = current_season["leagueNumber"]
+        player.current_season_trophies = current_season["trophies"]
+        player.previous_season_league_number = previous_season["leagueNumber"]
+        player.previous_season_trophies = previous_season["trophies"]
 
     with ThreadPoolExecutor() as executor:
-        path_statistics = dict(executor.map(lambda tag: get_stats_for_player(tag), clan.get_tags()))
+        executor.map(lambda player: get_stats_for_player(player), clan.get_members())
 
     LOGGER.info("Collection of path of legends statistics has finished.")
-    return pd.DataFrame.from_dict(path_statistics, orient="index")
 
 
 def _get_json_from_api(path: str, api_token: str):
