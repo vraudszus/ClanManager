@@ -5,6 +5,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 
+from player_ranking.clan import Clan
 from player_ranking.datetime_util import (
     get_next_first_monday_10_AM,
     get_previous_first_monday_10_AM,
@@ -19,14 +20,14 @@ LOGGER = logging.getLogger(__name__)
 class EvaluationPerformer:
     def __init__(
         self,
-        members: dict,
+        clan: Clan,
         current_war: pd.Series,
         war_log: pd.DataFrame,
         path: pd.DataFrame,
         ranking_parameters: RankingParameters,
         excuses: pd.DataFrame,
     ) -> None:
-        self.members = members
+        self.clan: Clan = clan
         self.current_war = current_war
         self.war_log = war_log
         self.path = path
@@ -41,7 +42,7 @@ class EvaluationPerformer:
         self.ignore_selected_wars()
         ExcuseAcceptor(
             excuse_params=self.params.excuses,
-            members=self.members,
+            clan=self.clan,
             current_war=self.current_war,
             war_log=self.war_log,
             excuses=self.excuses,
@@ -126,24 +127,21 @@ class EvaluationPerformer:
         ].min()
         current_trophies_max = self.path["current_season_trophies"].max()
 
-        members_df = pd.DataFrame.from_dict(self.members, orient="index")
-        trophies_min = members_df["trophies"].min()
-        trophies_max = members_df["trophies"].max()
+        trophies_min = self.clan.get_min_or_max(minimum=True, prop="trophies").trophies
+        trophies_max = self.clan.get_min_or_max(minimum=False, prop="trophies").trophies
 
-        for player_tag in self.members.keys():
+        for player in self.clan.get_members():
             ladder_rating = (
-                (self.members[player_tag]["trophies"] - trophies_min) / (trophies_max - trophies_min)
-                if trophies_max != trophies_min
-                else 1
+                (player.trophies - trophies_min) / (trophies_max - trophies_min) if trophies_max != trophies_min else 1
             )
 
-            previous_league = self.path.at[player_tag, "previous_season_league_number"]
+            previous_league = self.path.at[player.tag, "previous_season_league_number"]
             previous_league_rating = (
                 (previous_league - previous_league_min) / (previous_league_max - previous_league_min)
                 if previous_league_max != previous_league_min
                 else 1
             )
-            current_league = self.path.at[player_tag, "current_season_league_number"]
+            current_league = self.path.at[player.tag, "current_season_league_number"]
             current_league_rating = (
                 (current_league - current_league_min) / (current_league_max - current_league_min)
                 if current_league_max != current_league_min
@@ -154,7 +152,7 @@ class EvaluationPerformer:
             previous_trophies_rating = 0
             if previous_league == 10:
                 previous_trophies_rating = (
-                    (self.path.at[player_tag, "previous_season_trophies"] - previous_trophies_min)
+                    (self.path.at[player.tag, "previous_season_trophies"] - previous_trophies_min)
                     / (previous_trophies_max - previous_trophies_min)
                     if previous_trophies_max != previous_trophies_min
                     else 1
@@ -162,13 +160,13 @@ class EvaluationPerformer:
             current_trophies_rating = 0
             if current_league == 10:
                 current_trophies_rating = (
-                    (self.path.at[player_tag, "current_season_trophies"] - current_trophies_min)
+                    (self.path.at[player.tag, "current_season_trophies"] - current_trophies_min)
                     / (current_trophies_max - current_trophies_min)
                     if current_trophies_max != current_trophies_min
                     else 1
                 )
 
-            war_log_mean = self.war_log.at[player_tag, "mean"] if player_tag in self.war_log.index else None
+            war_log_mean = self.war_log.at[player.tag, "mean"] if player.tag in self.war_log.index else None
 
             if not pd.isnull(war_log_mean):
                 war_log_rating = (
@@ -177,7 +175,7 @@ class EvaluationPerformer:
             else:
                 war_log_rating = None
             # player_tag is not present in current_war until a user has logged in after season reset
-            current_fame = self.current_war[player_tag] if player_tag in self.current_war else 0
+            current_fame = self.current_war[player.tag] if player.tag in self.current_war else 0
             if current_fame_range > 0:
                 current_war_rating = (
                     (current_fame - current_min_fame) / current_fame_range if current_fame_range != 0 else 1
@@ -187,39 +185,31 @@ class EvaluationPerformer:
                 # Does not affect the rating on those days
                 current_war_rating = 1
 
-            self.members[player_tag]["rating"] = -1
-            self.members[player_tag]["ladder"] = ladder_rating * 1000
-            self.members[player_tag]["current_war"] = current_war_rating * 1000
-            self.members[player_tag]["war_history"] = war_log_rating * 1000 if war_log_rating is not None else None
-            self.members[player_tag]["avg_fame"] = (
-                self.war_log.at[player_tag, "mean"] if player_tag in self.war_log.index else None
-            )
-            self.members[player_tag]["previous_league"] = previous_league_rating * 1000
-            self.members[player_tag]["current_league"] = current_league_rating * 1000
-            self.members[player_tag]["previous_trophies"] = previous_trophies_rating * 1000
-            self.members[player_tag]["current_trophies"] = current_trophies_rating * 1000
+            player.rating = -1
+            player.ladder = ladder_rating * 1000
+            player.current_war = current_war_rating * 1000
+            player.war_history = war_log_rating * 1000 if war_log_rating is not None else None
+            player.avg_fame = self.war_log.at[player.tag, "mean"] if player.tag in self.war_log.index else None
+            player.previous_league = previous_league_rating * 1000
+            player.current_league = current_league_rating * 1000
+            player.previous_trophies = previous_trophies_rating * 1000
+            player.current_trophies = current_trophies_rating * 1000
 
-            self.members[player_tag]["current_season"] = (
-                self.members[player_tag]["current_league"] + self.members[player_tag]["current_trophies"]
-            )
-            self.members[player_tag]["previous_season"] = (
-                self.members[player_tag]["previous_league"] + self.members[player_tag]["previous_trophies"]
+            player.current_season = player.current_league + player.current_trophies
+            player.previous_season = player.previous_league + player.previous_trophies
+
+            war_history_rating = self.params.newPlayerWarLogRating if player.war_history is None else player.war_history
+            player.rating = (
+                weights.ladder * player.ladder
+                + weights.currentWar * player.current_war
+                + weights.previousSeasonLeague * player.previous_league
+                + weights.currentSeasonLeague * player.current_league
+                + weights.previousSeasonTrophies * player.previous_trophies
+                + weights.currentSeasonTrophies * player.current_trophies
+                + weights.warHistory * war_history_rating
             )
 
-            self.members[player_tag]["rating"] = (
-                weights.ladder * self.members[player_tag]["ladder"]
-                + weights.currentWar * self.members[player_tag]["current_war"]
-                + weights.previousSeasonLeague * self.members[player_tag]["previous_league"]
-                + weights.currentSeasonLeague * self.members[player_tag]["current_league"]
-                + weights.previousSeasonTrophies * self.members[player_tag]["previous_trophies"]
-                + weights.currentSeasonTrophies * self.members[player_tag]["current_trophies"]
-            )
-            if self.members[player_tag]["war_history"] is not None:
-                self.members[player_tag]["rating"] += weights.warHistory * self.members[player_tag]["war_history"]
-            else:
-                self.members[player_tag]["rating"] += weights.warHistory * self.params.newPlayerWarLogRating
-
-        performance = pd.DataFrame.from_dict(self.members, orient="index")
+        performance = pd.DataFrame([player.__dict__ for player in self.clan.get_members()])
         performance = performance[
             [
                 "name",

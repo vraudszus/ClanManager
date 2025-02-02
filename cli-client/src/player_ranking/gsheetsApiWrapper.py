@@ -10,6 +10,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+from player_ranking.clan import Clan
 from player_ranking.constants import ROOT_DIR
 from player_ranking.ranking_parameters import GoogleSheets
 
@@ -100,7 +101,7 @@ class GSheetsWrapper:
         else:
             return pd.DataFrame()
 
-    def update_excuse_sheet(self, members, current_war, war_history: pd.DataFrame, not_in_clan_str):
+    def update_excuse_sheet(self, clan: Clan, current_war, war_history: pd.DataFrame, not_in_clan_str):
         excuses = self.get_excuses()
 
         def empty_cells_with_numbers(x):
@@ -110,10 +111,11 @@ class GSheetsWrapper:
             except ValueError:
                 return x
 
-        missingFromCurrentWar = pd.Index(members.keys()).difference(current_war.index)
+        all_tags = clan.get_tags()
+        missingFromCurrentWar = pd.Index(all_tags).difference(current_war.index)
         if not missingFromCurrentWar.empty:
             LOGGER.info(f"Missing from current war: {missingFromCurrentWar}")
-        goodKeys = current_war.index.intersection(members.keys())
+        goodKeys = current_war.index.intersection(all_tags)
         # goodKeys is needed as some members do not show up in current_war
         # at season begin when not logging in some time after the end the previous war
         current_war = current_war[goodKeys]
@@ -154,7 +156,7 @@ class GSheetsWrapper:
                     excuses.drop(tags_to_remove, inplace=True)
             else:
                 LOGGER.info(f"Restore old {self.sheet_names.excuses}")
-                for tag in members:
+                for tag in all_tags:
                     # add rows for new players
                     if tag not in excuses.index:
                         excuses.loc[tag] = pd.Series()
@@ -162,10 +164,9 @@ class GSheetsWrapper:
         # add names
         excuses.index.name = "tag"
         if "name" not in excuses.columns:
-            tag_name_map = {k: v["name"] for k, v in members.items()}
-            excuses.insert(loc=0, column="name", value=pd.Series(tag_name_map))
+            excuses.insert(loc=0, column="name", value=pd.Series(clan.get_tag_name_map()))
         for tag, _ in excuses[excuses["name"].isna()].iterrows():
-            if tag in members:
-                excuses.at[tag, "name"] = members[tag]["name"]
+            if tag in all_tags:
+                excuses.at[tag, "name"] = clan.get(tag).name
         excuses.sort_values(by="name", inplace=True)
         return self.write_sheet(excuses, self.sheet_names.excuses)

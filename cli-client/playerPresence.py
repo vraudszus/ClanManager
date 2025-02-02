@@ -1,18 +1,18 @@
-from playerRanking import crApiWrapper
 import yaml
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from player_ranking import crApiWrapper
+
 props = yaml.safe_load(open("ranking_parameters.yaml", "r"))
 clan_tag = props["clanTag"]
-cr_api_url = props["crApiUrl"]
 cr_token = props["apiTokens"]["crApiTokenPath"]
 rating_history_file = props["ratingHistoryFile"]
 
-members = crApiWrapper.get_current_members(clan_tag, cr_token, cr_api_url)
+clan = crApiWrapper.get_current_members(clan_tag, cr_token)
 
 df = pd.read_csv(rating_history_file, sep=";", index_col=0)
-onlyCurrentMembers = df.loc[members.keys()]
+onlyCurrentMembers = df.loc[clan.get_tags()]
 
 for tag, datapoints in onlyCurrentMembers.iterrows():
     for date, score in datapoints.items():

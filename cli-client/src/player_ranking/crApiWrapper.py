@@ -4,6 +4,8 @@ from typing import Tuple
 import requests
 import pandas as pd
 
+from player_ranking.clan import Clan, ClanMember
+
 # URL of the proxy provided by RoyaleAPI.com
 # Alternatively you can use the official URL "https://api.clashroyale.com/v1"
 # Dynamic IPs don't work with the official URL as the IP must be whitelisted
@@ -11,36 +13,31 @@ API_ENDPOINT: str = "https://proxy.royaleapi.dev/v1"
 LOGGER = logging.getLogger(__name__)
 
 
-def get_current_members(clan_tag, api_token):
+def get_current_members(clan_tag, api_token) -> Clan:
     LOGGER.info("Building list of current members...")
     path = f"/clans/%23{clan_tag[1:]}"
-    member_list = _get_json_from_api(path, api_token)["memberList"]
-    members = {}
-    for member in member_list:
-        info = {
-            "name": member["name"],
-            "role": member["role"],
-            "trophies": member["trophies"],
-        }
-        members[member["tag"]] = info
-    LOGGER.info(f"{len(members)} current members have been found.")
-    return members
+    raw_members = _get_json_from_api(path, api_token)["memberList"]
+    clan = Clan()
+    for raw in raw_members:
+        clan.add(ClanMember(tag=raw["tag"], name=raw["name"], role=raw["role"], trophies=raw["trophies"]))
+    LOGGER.info(f"{len(clan)} current members have been found.")
+    return clan
 
 
-def get_war_statistics(clan_tag, members, api_token):
+def get_war_statistics(clan_tag, clan: Clan, api_token):
     LOGGER.info("Fetching river race statistics...")
     path = f"/clans/%23{clan_tag[1:]}/riverracelog"
     river_races = _get_json_from_api(path, api_token)["items"]
 
     war_statistics = {}
-    for player_tag in members.keys():
+    for player_tag in clan.get_tags():
         war_statistics[player_tag] = {}
 
     def handle_participants(race_id, participants):
         for participant in participants:
-            player_tag = participant["tag"]
-            if player_tag in war_statistics:
-                war_statistics[player_tag][race_id] = int(participant["fame"])
+            tag = participant["tag"]
+            if tag in war_statistics:
+                war_statistics[tag][race_id] = int(participant["fame"])
 
     for river_race in river_races:
         river_race_id = f'{river_race["seasonId"]}.{river_race["sectionIndex"]}'
@@ -67,8 +64,8 @@ def get_current_river_race(clan_tag, api_token):
     return pd.Series(current_war_statistics)
 
 
-def get_path_statistics(members, api_token):
-    LOGGER.info(f"Fetching path of legends statistics for all {len(members)} members...")
+def get_path_statistics(clan: Clan, api_token):
+    LOGGER.info(f"Fetching path of legends statistics for all {len(clan)} members...")
 
     def get_stats_for_player(player_tag: str) -> Tuple[str, dict[str, int]]:
         player = _get_json_from_api(f"/players/%23{player_tag[1:]}", api_token)
@@ -85,7 +82,7 @@ def get_path_statistics(members, api_token):
         return player_tag, stats
 
     with ThreadPoolExecutor() as executor:
-        path_statistics = dict(executor.map(lambda tag: get_stats_for_player(tag), members.keys()))
+        path_statistics = dict(executor.map(lambda tag: get_stats_for_player(tag), clan.get_tags()))
 
     LOGGER.info("Collection of path of legends statistics has finished.")
     return pd.DataFrame.from_dict(path_statistics, orient="index")
