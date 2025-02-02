@@ -3,7 +3,7 @@ import logging
 import os
 
 from player_ranking import cr_api_client
-from player_ranking import historyWrapper
+from player_ranking import history_wrapper
 from player_ranking.models.clan import Clan
 from player_ranking.constants import ROOT_DIR
 from player_ranking.evaluation_performer import EvaluationPerformer
@@ -60,9 +60,9 @@ def perform_evaluation(plot: bool):
 
     performance = EvaluationPerformer(clan, current_war, war_log, params, excuses_df).evaluate()
 
-    historyWrapper.append_rating_history(ROOT_DIR / params.ratingHistoryFile, performance["rating"])
+    history_wrapper.append_rating_history(ROOT_DIR / params.ratingHistoryFile, performance["rating"])
     if plot:
-        historyWrapper.plot_rating_history(
+        history_wrapper.plot_rating_history(
             ROOT_DIR / params.ratingHistoryFile, clan, ROOT_DIR / params.ratingHistoryImage
         )
     print_pending_rank_changes(clan, war_log, params.promotionDemotionRequirements)
