@@ -1,5 +1,4 @@
 import logging
-import math
 from datetime import date, datetime, timedelta, timezone
 from typing import List
 
@@ -11,6 +10,7 @@ from player_ranking.datetime_util import (
     get_previous_first_monday_10_AM,
     get_time_since_last_thursday_10_Am,
 )
+from player_ranking.excuse_acceptor import ExcuseAcceptor
 from player_ranking.ranking_parameters import RankingParameters
 
 LOGGER = logging.getLogger(__name__)
@@ -39,7 +39,14 @@ class EvaluationPerformer:
         self.adjust_season_weights()
         self.account_for_shorter_wars()
         self.ignore_selected_wars()
-        self.accept_excuses()
+        ExcuseAcceptor(
+            excuse_params=self.params.excuses,
+            members=self.members,
+            current_war=self.current_war,
+            war_log=self.war_log,
+            excuses=self.excuses,
+            war_progress=self.war_progress,
+        ).update_fame_with_excuses()
         return self.evaluate_performance()
 
     def adjust_war_weights(self):
@@ -93,40 +100,6 @@ class EvaluationPerformer:
     def account_for_shorter_wars(self):
         shorter_wars_in_history = list(set(self.params.threeDayWars) & set(self.war_log.columns))
         self.war_log.loc[:, shorter_wars_in_history] *= 4 / 3
-
-    def accept_excuses(self):
-        def handle_excuse(player_name: str, old_fame: int, war_id: str, factor: float = 1):
-            excuse = self.excuses.at[tag, war_id]
-            if not excuse or math.isnan(old_fame):
-                return old_fame
-            self.params.excuses.check_excuse(excuse)
-            if self.params.excuses.should_ignore_war(excuse):
-                new_fame = np.nan
-            else:
-                # scale if race is still ongoing
-                new_fame = int(1600 * factor)
-            LOGGER.info(f"Excuse {excuse} accepted for player={player_name} in war={war_id}")
-            return new_fame
-
-        for tag in self.members:
-            name = self.members[tag]["name"]
-            if tag in self.excuses.index:
-                # current river race
-                self.current_war.at[tag] = handle_excuse(
-                    player_name=name,
-                    old_fame=self.current_war.at[tag],
-                    war_id="current",
-                    factor=self.war_progress,
-                )
-                if tag in self.war_log.index:
-                    for war, fame in self.war_log.loc[tag].items():
-                        if war in self.excuses.columns:
-                            # river race history
-                            self.war_log.loc[tag, war] = handle_excuse(
-                                player_name=name,
-                                old_fame=fame,
-                                war_id=war,
-                            )
 
     def evaluate_performance(self):
         weights = self.params.ratingWeights
