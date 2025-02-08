@@ -2,12 +2,12 @@ import json
 import logging
 import os
 
-from player_ranking import cr_api_client
 from player_ranking import history_wrapper
-from player_ranking.models.clan import Clan
 from player_ranking.constants import ROOT_DIR
+from player_ranking.cr_api_client import CRAPIClient
 from player_ranking.evaluation_performer import EvaluationPerformer
 from player_ranking.gsheets_api_client import GSheetsAPIClient
+from player_ranking.models.clan import Clan
 from player_ranking.models.ranking_parameters import RankingParameters, PromotionDemotionRequirements
 from player_ranking.models.ranking_parameters_validation import RankingParameterValidator
 
@@ -46,10 +46,11 @@ def perform_evaluation(plot: bool):
     gsheets_refresh_token = json.loads(gsheets_refresh_token_raw)
 
     LOGGER.info(f"Evaluating performance of players from {params.clanTag}...")
-    clan = cr_api_client.get_current_members(params.clanTag, cr_api_token)
-    war_log = cr_api_client.get_war_statistics(params.clanTag, clan, cr_api_token)
-    current_war = cr_api_client.get_current_river_race(params.clanTag, cr_api_token)
-    cr_api_client.get_path_statistics(clan, cr_api_token)
+    cr_api = CRAPIClient(cr_api_token, params.clanTag)
+    clan = cr_api.get_current_members()
+    war_log = cr_api.get_war_statistics(clan)
+    current_war = cr_api.get_current_river_race()
+    cr_api.get_path_statistics(clan)
 
     gsheets_client = GSheetsAPIClient(
         refresh_token=gsheets_refresh_token,
