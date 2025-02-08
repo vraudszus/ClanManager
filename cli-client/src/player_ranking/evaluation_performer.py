@@ -17,10 +17,12 @@ from player_ranking.models.ranking_parameters import RankingParameters
 LOGGER = logging.getLogger(__name__)
 
 
-def normalize(val: int, max_val: int, min_val: int, default: int) -> float:
+def normalize(val: int, max_val: int, min_val: int, default: int) -> float | None:
+    if pd.isnull(val):
+        return None
     if max_val == min_val:
         return default
-    return (val - min_val) / (max_val - min_val)
+    return (val - min_val) / (max_val - min_val) * 1000
 
 
 class EvaluationPerformer:
@@ -40,6 +42,11 @@ class EvaluationPerformer:
         self.excuses: pd.DataFrame = excuses
 
     def evaluate(self) -> pd.DataFrame:
+        self.adjust_inputs()
+        self.evaluate_ratings()
+        return self.build_rating_df()
+
+    def adjust_inputs(self) -> None:
         self.adjust_war_weights()
         self.adjust_season_weights()
         self.account_for_shorter_wars()
@@ -51,8 +58,7 @@ class EvaluationPerformer:
             war_log=self.war_log,
             excuses=self.excuses,
             war_progress=self.war_progress,
-        ).update_fame_with_excuses()
-        return self.evaluate_performance()
+        ).adjust_fame_with_excuses()
 
     def adjust_war_weights(self):
         weights = self.params.ratingWeights
@@ -106,99 +112,29 @@ class EvaluationPerformer:
         shorter_wars_in_history = list(set(self.params.threeDayWars) & set(self.war_log.columns))
         self.war_log.loc[:, shorter_wars_in_history] *= 4 / 3
 
-    def evaluate_performance(self):
+    def evaluate_ratings(self) -> None:
         weights = self.params.ratingWeights
-        self.war_log["mean"] = self.war_log.mean(axis=1)
-        war_log_max_fame = self.war_log["mean"].max()
-        war_log_min_fame = self.war_log["mean"].min()
-        current_max_fame = self.current_war.max()
-        current_min_fame = self.current_war.min()
 
-        previous_league_min = self.clan.get_min("previous_season_league_number")
-        previous_league_max = self.clan.get_max("previous_season_league_number")
-        current_league_min = self.clan.get_min("current_season_league_number")
-        current_league_max = self.clan.get_max("current_season_league_number")
-
-        # only count league 10 players for trophy min, otherwise it will always be 0
-        previous_trophies_min = self.clan.filter(lambda p: p.previous_season_league_number == 10).get_min(
-            "previous_season_trophies"
-        )
-        previous_trophies_max = self.clan.get_max("previous_season_trophies")
-        current_trophies_min = self.clan.filter(lambda p: p.current_season_league_number == 10).get_min(
-            "current_season_trophies"
-        )
-        current_trophies_max = self.clan.get_max("current_season_trophies")
-
-        trophies_min = self.clan.get_min("trophies")
-        trophies_max = self.clan.get_max("trophies")
+        self.evaluate_war_log()
+        self.evaluate_current_war()
+        self.evaluate_previous_season()
+        self.evaluate_current_season()
+        self.evaluate_ladder()
 
         for player in self.clan.get_members():
-            ladder_rating = normalize(player.trophies, trophies_max, trophies_min, 1)
-
-            previous_league = player.previous_season_league_number
-            previous_league_rating = normalize(previous_league, previous_league_max, previous_league_min, 1)
-            current_league = player.current_season_league_number
-            current_league_rating = normalize(current_league, current_league_max, current_league_min, 1)
-
-            # only grant points to players in league 10
-            previous_trophies_rating = 0
-            if previous_league == 10:
-                previous_trophies_rating = normalize(
-                    player.previous_season_trophies, previous_trophies_max, previous_trophies_min, 1
-                )
-            current_trophies_rating = 0
-            if current_league == 10:
-                current_trophies_rating = normalize(
-                    player.current_season_trophies, current_trophies_max, current_trophies_min, 1
-                )
-
-            war_log_mean = self.war_log.at[player.tag, "mean"] if player.tag in self.war_log.index else None
-            if not pd.isnull(war_log_mean):
-                war_log_rating = normalize(war_log_mean, war_log_max_fame, war_log_min_fame, 1)
+            if player.war_history is None:
+                war_history_rating = self.params.newPlayerWarLogRating
+                LOGGER.info(f"Defaulted war log rating to {self.params.newPlayerWarLogRating} for {player.name}")
             else:
-                war_log_rating = None
+                war_history_rating = player.war_history
 
-            # player_tag is not present in current_war until a user has logged in after season reset
-            current_fame = self.current_war[player.tag] if player.tag in self.current_war else 0
-            current_war_rating = normalize(current_fame, current_max_fame, current_min_fame, 1)
-
-            player.ladder = ladder_rating * 1000
-            player.current_war = current_war_rating * 1000
-            player.war_history = war_log_rating * 1000 if war_log_rating is not None else None
-            player.avg_fame = war_log_mean
-            player.previous_league = previous_league_rating * 1000
-            player.current_league = current_league_rating * 1000
-            player.previous_trophies = previous_trophies_rating * 1000
-            player.current_trophies = current_trophies_rating * 1000
-
-            player.current_season = player.current_league + player.current_trophies
-            player.previous_season = player.previous_league + player.previous_trophies
-
-            war_history_rating = self.params.newPlayerWarLogRating if player.war_history is None else player.war_history
-            player.rating = (
-                weights.ladder * player.ladder
-                + weights.currentWar * player.current_war
-                + weights.previousSeasonLeague * player.previous_league
-                + weights.currentSeasonLeague * player.current_league
-                + weights.previousSeasonTrophies * player.previous_trophies
-                + weights.currentSeasonTrophies * player.current_trophies
-                + weights.warHistory * war_history_rating
-            )
-
-        performance = pd.DataFrame([player.__dict__ for player in self.clan.get_members()])
-        performance = performance.set_index("tag")
-        performance = performance[
-            [
-                "name",
-                "rating",
-                "ladder",
-                "current_war",
-                "war_history",
-                "avg_fame",
-                "current_season",
-                "previous_season",
-            ]
-        ]
+            player.rating = weights.ladder * player.ladder
+            player.rating += weights.currentWar * player.current_war
+            player.rating += weights.previousSeasonLeague * player.previous_league
+            player.rating += weights.currentSeasonLeague * player.current_league
+            player.rating += weights.previousSeasonTrophies * player.previous_trophies
+            player.rating += weights.currentSeasonTrophies * player.current_trophies
+            player.rating += weights.warHistory * war_history_rating
 
         LOGGER.info("Performance rating calculated according to the following formula:")
         LOGGER.info(
@@ -211,4 +147,90 @@ class EvaluationPerformer:
             f"+ {weights.currentSeasonTrophies:.2f}*currentPathTrophies "
             f"+ {weights.warHistory:.2f}*warHistory"
         )
-        return performance.sort_values("rating", ascending=False)
+
+    def evaluate_ladder(self) -> None:
+        trophies_min = self.clan.get_min("trophies")
+        trophies_max = self.clan.get_max("trophies")
+        for player in self.clan.get_members():
+            player.ladder = normalize(player.trophies, trophies_max, trophies_min, 1000)
+
+    def evaluate_war_log(self) -> None:
+        self.war_log["mean"] = self.war_log.mean(axis=1)
+        war_log_max_fame = self.war_log["mean"].max()
+        war_log_min_fame = self.war_log["mean"].min()
+        for player in self.clan.get_members():
+            player.avg_fame = self.war_log.at[player.tag, "mean"] if player.tag in self.war_log.index else None
+            player.war_history = normalize(player.avg_fame, war_log_max_fame, war_log_min_fame, 1000)
+
+    def evaluate_current_war(self) -> None:
+        current_max_fame = self.current_war.max()
+        current_min_fame = self.current_war.min()
+        for player in self.clan.get_members():
+            # player_tag is not present in current_war until a user has logged in after season reset
+            current_fame = self.current_war[player.tag] if player.tag in self.current_war else 0
+            player.current_war = normalize(current_fame, current_max_fame, current_min_fame, 1000)
+
+    def evaluate_previous_season(self) -> None:
+        previous_league_min = self.clan.get_min("previous_season_league_number")
+        previous_league_max = self.clan.get_max("previous_season_league_number")
+
+        # only count league 10 players for trophy min, otherwise it will always be 0
+        previous_trophies_min = self.clan.filter(lambda p: p.previous_season_league_number == 10).get_min(
+            "previous_season_trophies"
+        )
+        previous_trophies_max = self.clan.get_max("previous_season_trophies")
+
+        for player in self.clan.get_members():
+            previous_league = player.previous_season_league_number
+            player.previous_league = normalize(previous_league, previous_league_max, previous_league_min, 1000)
+
+            # only grant points to players in league 10
+            player.previous_trophies = 0
+            if previous_league == 10:
+                player.previous_trophies = normalize(
+                    player.previous_season_trophies, previous_trophies_max, previous_trophies_min, 1000
+                )
+
+            # join path of legends related metric to reduce number of columns
+            player.previous_season = player.previous_league + player.previous_trophies
+
+    def evaluate_current_season(self) -> None:
+        current_league_min = self.clan.get_min("current_season_league_number")
+        current_league_max = self.clan.get_max("current_season_league_number")
+
+        # only count league 10 players for trophy min, otherwise it will always be 0
+        current_trophies_min = self.clan.filter(lambda p: p.current_season_league_number == 10).get_min(
+            "current_season_trophies"
+        )
+        current_trophies_max = self.clan.get_max("current_season_trophies")
+
+        for player in self.clan.get_members():
+            current_league = player.current_season_league_number
+            player.current_league = normalize(current_league, current_league_max, current_league_min, 1000)
+
+            # only grant points to players in league 10
+            player.current_trophies = 0
+            if current_league == 10:
+                player.current_trophies = normalize(
+                    player.current_season_trophies, current_trophies_max, current_trophies_min, 1000
+                )
+
+            # join path of legends related metric to reduce number of columns
+            player.current_season = player.current_league + player.current_trophies
+
+    def build_rating_df(self) -> pd.DataFrame:
+        rating = pd.DataFrame([player.__dict__ for player in self.clan.get_members()])
+        rating = rating.set_index("tag")
+        rating = rating[
+            [
+                "name",
+                "rating",
+                "ladder",
+                "current_war",
+                "war_history",
+                "avg_fame",
+                "current_season",
+                "previous_season",
+            ]
+        ]
+        return rating.sort_values("rating", ascending=False)

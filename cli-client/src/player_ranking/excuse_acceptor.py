@@ -27,7 +27,7 @@ class ExcuseAcceptor:
         self.excuses: pd.DataFrame = excuses
         self.war_progress = war_progress
 
-    def update_fame_with_excuses(self) -> None:
+    def adjust_fame_with_excuses(self) -> None:
         for tag in self.clan.get_tags():
             if tag in self.excuses.index:
                 # current river race
