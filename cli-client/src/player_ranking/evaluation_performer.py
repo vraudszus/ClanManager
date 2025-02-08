@@ -17,6 +17,12 @@ from player_ranking.models.ranking_parameters import RankingParameters
 LOGGER = logging.getLogger(__name__)
 
 
+def normalize(val: int, max_val: int, min_val: int, default: int) -> float:
+    if max_val == min_val:
+        return default
+    return (val - min_val) / (max_val - min_val)
+
+
 class EvaluationPerformer:
     def __init__(
         self,
@@ -105,10 +111,8 @@ class EvaluationPerformer:
         self.war_log["mean"] = self.war_log.mean(axis=1)
         war_log_max_fame = self.war_log["mean"].max()
         war_log_min_fame = self.war_log["mean"].min()
-        war_history_fame_range = war_log_max_fame - war_log_min_fame
         current_max_fame = self.current_war.max()
         current_min_fame = self.current_war.min()
-        current_fame_range = current_max_fame - current_min_fame
 
         previous_league_min = self.clan.get_min("previous_season_league_number")
         previous_league_max = self.clan.get_max("previous_season_league_number")
@@ -129,65 +133,39 @@ class EvaluationPerformer:
         trophies_max = self.clan.get_max("trophies")
 
         for player in self.clan.get_members():
-            ladder_rating = (
-                (player.trophies - trophies_min) / (trophies_max - trophies_min) if trophies_max != trophies_min else 1
-            )
+            ladder_rating = normalize(player.trophies, trophies_max, trophies_min, 1)
 
             previous_league = player.previous_season_league_number
-            previous_league_rating = (
-                (previous_league - previous_league_min) / (previous_league_max - previous_league_min)
-                if previous_league_max != previous_league_min
-                else 1
-            )
+            previous_league_rating = normalize(previous_league, previous_league_max, previous_league_min, 1)
             current_league = player.current_season_league_number
-            current_league_rating = (
-                (current_league - current_league_min) / (current_league_max - current_league_min)
-                if current_league_max != current_league_min
-                else 1
-            )
+            current_league_rating = normalize(current_league, current_league_max, current_league_min, 1)
 
             # only grant points to players in league 10
             previous_trophies_rating = 0
             if previous_league == 10:
-                previous_trophies_rating = (
-                    (player.previous_season_trophies - previous_trophies_min)
-                    / (previous_trophies_max - previous_trophies_min)
-                    if previous_trophies_max != previous_trophies_min
-                    else 1
+                previous_trophies_rating = normalize(
+                    player.previous_season_trophies, previous_trophies_max, previous_trophies_min, 1
                 )
             current_trophies_rating = 0
             if current_league == 10:
-                current_trophies_rating = (
-                    (player.current_season_trophies - current_trophies_min)
-                    / (current_trophies_max - current_trophies_min)
-                    if current_trophies_max != current_trophies_min
-                    else 1
+                current_trophies_rating = normalize(
+                    player.current_season_trophies, current_trophies_max, current_trophies_min, 1
                 )
 
             war_log_mean = self.war_log.at[player.tag, "mean"] if player.tag in self.war_log.index else None
-
             if not pd.isnull(war_log_mean):
-                war_log_rating = (
-                    (war_log_mean - war_log_min_fame) / war_history_fame_range if war_history_fame_range != 0 else 1
-                )
+                war_log_rating = normalize(war_log_mean, war_log_max_fame, war_log_min_fame, 1)
             else:
                 war_log_rating = None
+
             # player_tag is not present in current_war until a user has logged in after season reset
             current_fame = self.current_war[player.tag] if player.tag in self.current_war else 0
-            if current_fame_range > 0:
-                current_war_rating = (
-                    (current_fame - current_min_fame) / current_fame_range if current_fame_range != 0 else 1
-                )
-            else:
-                # Default value that is used during trainings days.
-                # Does not affect the rating on those days
-                current_war_rating = 1
+            current_war_rating = normalize(current_fame, current_max_fame, current_min_fame, 1)
 
-            player.rating = -1
             player.ladder = ladder_rating * 1000
             player.current_war = current_war_rating * 1000
             player.war_history = war_log_rating * 1000 if war_log_rating is not None else None
-            player.avg_fame = self.war_log.at[player.tag, "mean"] if player.tag in self.war_log.index else None
+            player.avg_fame = war_log_mean
             player.previous_league = previous_league_rating * 1000
             player.current_league = current_league_rating * 1000
             player.previous_trophies = previous_trophies_rating * 1000

@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 
@@ -40,10 +39,9 @@ def print_pending_rank_changes(clan: Clan, war_log, requirements: PromotionDemot
 def perform_evaluation(plot: bool):
     params: RankingParameters = RankingParameterValidator(open(ROOT_DIR / "ranking_parameters.yaml")).validate()
 
-    cr_api_token = read_env_variable("CR_API_TOKEN")
-    gsheets_refresh_token_raw = read_env_variable("GSHEETS_REFRESH_TOKEN")
-    gsheets_spreadsheet_id = read_env_variable("GSHEET_SPREADSHEET_ID")
-    gsheets_refresh_token = json.loads(gsheets_refresh_token_raw)
+    cr_api_token: str = read_env_variable("CR_API_TOKEN")
+    gsheets_spreadsheet_id: str = read_env_variable("GSHEET_SPREADSHEET_ID")
+    gsheets_refresh_token: str = read_env_variable("GSHEETS_REFRESH_TOKEN")
 
     LOGGER.info(f"Evaluating performance of players from {params.clanTag}...")
     cr_api = CRAPIClient(cr_api_token, params.clanTag)

@@ -3,17 +3,11 @@ from dataclasses import dataclass
 
 @dataclass
 class ClanMember:
-    # combines all other ratings
+    # ratings
     rating: float
-
-    # ladder rating
     ladder: float
-
-    # clan war ratings
     current_war: float
     war_history: float
-
-    # path of legends ratings
     previous_league: float
     current_league: float
     previous_trophies: float
@@ -21,7 +15,7 @@ class ClanMember:
     current_season: float
     previous_season: float
 
-    # other stats
+    # player stats
     avg_fame: float
     current_season_league_number: int
     previous_season_league_number: int
