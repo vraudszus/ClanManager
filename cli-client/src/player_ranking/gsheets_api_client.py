@@ -47,7 +47,7 @@ class GSheetsAPIClient:
 
         return build("sheets", "v4", credentials=creds)
 
-    def _get_sheet_by_name(self, sheet_name: str):
+    def _get_sheet_id(self, sheet_name: str):
         sheets_with_properties = (
             self.service.spreadsheets()
             .get(spreadsheetId=self.spreadsheet_id, fields="sheets.properties")
@@ -55,9 +55,9 @@ class GSheetsAPIClient:
             .get("sheets")
         )
         for sheet in sheets_with_properties:
-            if "title" in sheet["properties"].keys():
-                if sheet["properties"]["title"] == sheet_name:
-                    return sheet["properties"]["sheetId"]
+            if sheet["properties"]["title"] == sheet_name:
+                return sheet["properties"]["sheetId"]
+        raise KeyError(f"Sheet {sheet_name} not found in Google spreadsheet.")
 
     def _clear_sheet(self, sheet_name: str):
         request = self.service.spreadsheets().values().clear(spreadsheetId=self.spreadsheet_id, range=sheet_name)
@@ -71,7 +71,7 @@ class GSheetsAPIClient:
                 {
                     "pasteData": {
                         "coordinate": {
-                            "sheetId": self._get_sheet_by_name(sheet_name),
+                            "sheetId": self._get_sheet_id(sheet_name),
                             "rowIndex": "0",
                             "columnIndex": "0",
                         },
@@ -135,7 +135,7 @@ class GSheetsAPIClient:
             last_recorded_cw = -1
 
         if last_recorded_cw not in war_history.columns.tolist():
-            LOGGER.info(f"Write complety new {self.sheet_names.excuses}")
+            LOGGER.info(f"Replace entire {self.sheet_names.excuses}")
             excuses = wars
         else:
             columns_to_shift = war_history.columns.tolist().index(last_recorded_cw)
