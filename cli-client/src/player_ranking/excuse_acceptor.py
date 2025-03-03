@@ -33,7 +33,7 @@ class ExcuseAcceptor:
                 # current river race
                 self.current_war.at[tag] = self.get_new_fame(
                     player_tag=tag,
-                    old_fame=self.current_war.at[tag],
+                    old_fame=self.current_war.get(tag, 0),
                     war_id="current",
                     factor=self.war_progress,
                 )
