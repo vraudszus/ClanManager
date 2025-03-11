@@ -26,9 +26,13 @@ class Clan:
         return Clan({k: v for k, v in self._members.items() if condition(v)})
 
     def get_min(self, prop: str) -> int | float:
+        if not self._members:
+            return 0
         return getattr(min(self._members.values(), key=lambda v: getattr(v, prop)), prop)
 
     def get_max(self, prop: str) -> int | float:
+        if not self._members:
+            return 0
         return getattr(max(self._members.values(), key=lambda v: getattr(v, prop)), prop)
 
     def __len__(self) -> int:
