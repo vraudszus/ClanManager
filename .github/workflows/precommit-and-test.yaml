@@ -1,0 +1,36 @@
+name: pre-commit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch: # Run manually when needed
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Precommit Checks
+        uses: pre-commit/action@v3.0.1
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Install dependencies
+        run: |
+          cd cli-client
+          poetry install --with dev
+
+      - name: Run tests
+        run: |
+          cd cli-client
+          poetry run pytest
