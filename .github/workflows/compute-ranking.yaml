@@ -30,7 +30,7 @@ jobs:
       - name: Run PlayerRanking
         env:
           CR_API_TOKEN: ${{ secrets.CR_API_TOKEN }}
-          GSHEETS_REFRESH_TOKEN: ${{ secrets.GSHEETS_REFRESH_TOKEN }}
+          GSHEETS_SERVICE_ACCOUNT_KEY: ${{ secrets.GSHEETS_SERVICE_ACCOUNT_KEY }}
           GSHEET_SPREADSHEET_ID: ${{ secrets.GSHEET_SPREADSHEET_ID }}
         run: |
           cd cli-client
