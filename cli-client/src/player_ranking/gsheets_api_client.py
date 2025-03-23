@@ -1,56 +1,34 @@
+import itertools
 import json
 import logging
-import os.path
 from json import JSONDecodeError
 
-import pandas as pd
 import numpy as np
-import itertools
-
-from google.auth.transport.requests import Request
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
+import pandas as pd
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
 from player_ranking.models.clan import Clan
-from player_ranking.constants import ROOT_DIR
 from player_ranking.models.ranking_parameters import GoogleSheets
 
 LOGGER = logging.getLogger(__name__)
-ACCESS_TOKEN_FILENAME: str = ".gsheets_access_token.json"
 
 
 class GSheetsAPIClient:
     SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-    def __init__(self, refresh_token: str, spreadsheet_id: str, sheet_names: GoogleSheets) -> None:
-        self.access_token_path: str = (ROOT_DIR / ACCESS_TOKEN_FILENAME).as_posix()
+    def __init__(self, service_account_key: str, spreadsheet_id: str, sheet_names: GoogleSheets) -> None:
         self.spreadsheet_id = spreadsheet_id
-        self.service = self.connect_to_service(refresh_token)
+        self.service = self.connect_to_service(service_account_key)
         self.sheet_names = sheet_names
 
-    def connect_to_service(self, refresh_token_str: str):
+    @staticmethod
+    def connect_to_service(service_account_key: str):
         try:
-            refresh_token = json.loads(refresh_token_str)
+            service_account_key = json.loads(service_account_key)
         except JSONDecodeError as e:
-            raise EnvironmentError(f"Unable to parse gsheets refresh token: {e}")
-        creds = None
-        # The file token.json stores the user's access and refresh tokens, and is
-        # created automatically when the authorization flow completes for the first
-        # time.
-        if os.path.exists(self.access_token_path):
-            creds = Credentials.from_authorized_user_file(self.access_token_path, self.SCOPES)
-        # If there are no (valid) credentials available, let the user log in.
-        if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_config(refresh_token, self.SCOPES)
-                creds = flow.run_local_server(port=0)
-            # Save the credentials for the next run
-            with open(self.access_token_path, "w") as token:
-                token.write(creds.to_json())
-
+            raise EnvironmentError(f"Unable to parse gsheets service account key: {e}")
+        creds = service_account.Credentials.from_service_account_info(service_account_key)
         return build("sheets", "v4", credentials=creds)
 
     def _get_sheet_id(self, sheet_name: str):

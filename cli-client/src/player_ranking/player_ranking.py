@@ -41,7 +41,7 @@ def perform_evaluation(plot: bool):
 
     cr_api_token: str = read_env_variable("CR_API_TOKEN")
     gsheets_spreadsheet_id: str = read_env_variable("GSHEET_SPREADSHEET_ID")
-    gsheets_refresh_token: str = read_env_variable("GSHEETS_REFRESH_TOKEN")
+    gsheets_service_account_key: str = read_env_variable("GSHEETS_SERVICE_ACCOUNT_KEY")
 
     LOGGER.info(f"Evaluating performance of players from {params.clanTag}...")
     cr_api = CRAPIClient(cr_api_token, params.clanTag)
@@ -51,7 +51,7 @@ def perform_evaluation(plot: bool):
     cr_api.get_path_statistics(clan)
 
     gsheets_client = GSheetsAPIClient(
-        refresh_token=gsheets_refresh_token,
+        service_account_key=gsheets_service_account_key,
         spreadsheet_id=gsheets_spreadsheet_id,
         sheet_names=params.googleSheets,
     )
