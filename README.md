@@ -33,18 +33,19 @@
 
 ```bash
 CR_API_TOKEN=
-GSHEETS_REFRESH_TOKEN=
 GSHEET_SPREADSHEET_ID=
+GSHEETS_SERVICE_ACCOUNT_KEY=
 ```
 
 - Add your credentials to `cli-client/.env`
   - `CR_API_TOKEN` [Clash Royale API token](https://developer.clashroyale.com/#/)
     (use the [RoyalAPI proxy](https://docs.royaleapi.com/proxy.html) unless you have a static IP)
-  - `GSHEETS_REFRESH_TOKEN` The Google Sheets API credentials for writing results.
-    Follow [this](https://developers.google.com/sheets/api/quickstart/python) guide until you have the
-    `credentials.json` file. Copy&Paste its contents to this variable.
   - `GSHEET_SPREADSHEET_ID` ID of a Google spreadsheet with two empty sheets named after
-    `googleSheets.rating` and `googleSheets.excuses` in [ranking_parameters.yaml](cli-client/ranking_parameters.yaml)
+  `googleSheets.rating` and `googleSheets.excuses` in [ranking_parameters.yaml](cli-client/ranking_parameters.yaml)
+  - `GSHEETS_SERVICE_ACCOUNT_KEY` The Google Sheets API credentials for writing results to the Google sheet.
+    You can obtain the credential by performing steps 1-3 from [this](https://genezio.com/deployment-platform/blog/google-sheets-as-apis/#step-2-create-a-service-account-and-generate-a-key-file)
+    guide. You need to grant the service account editor permissions.
+    Copy&Paste the contents of the downloaded `.json` file to this variable.
 
 ## Usage
 
