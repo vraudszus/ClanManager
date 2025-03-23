@@ -1,5 +1,7 @@
+import json
 import logging
 import os.path
+from json import JSONDecodeError
 
 import pandas as pd
 import numpy as np
@@ -27,7 +29,11 @@ class GSheetsAPIClient:
         self.service = self.connect_to_service(refresh_token)
         self.sheet_names = sheet_names
 
-    def connect_to_service(self, refresh_token: str):
+    def connect_to_service(self, refresh_token_str: str):
+        try:
+            refresh_token = json.loads(refresh_token_str)
+        except JSONDecodeError as e:
+            raise EnvironmentError(f"Unable to parse gsheets refresh token: {e}")
         creds = None
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
