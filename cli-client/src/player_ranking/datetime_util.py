@@ -1,30 +1,41 @@
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta
 
 
-def get_previous_first_monday_10_AM(dt_utc: date) -> datetime:
-    if dt_utc.weekday() >= dt_utc.day:
-        # the current month didn't yet have a Monday
-        prev_month_first_day: date = (dt_utc - timedelta(weeks=1)).replace(day=1)
+def get_season_start(ts: datetime) -> datetime:
+    """
+    Computes the start of the season (first Monday at 10 AM) for the season the given timestamp falls into.
+    The provided timestamp must be in UTC.
+    """
+    if ts.weekday() >= ts.day or (ts.weekday() == 0 and ts.day < 8 and ts.time() < time(hour=10)):
+        # the current month didn't yet have a Monday 10 AM
+        prev_month_first_day: date = (ts - timedelta(weeks=1)).replace(day=1)
         prev_first_monday: date = prev_month_first_day + timedelta(days=(7 - prev_month_first_day.weekday()) % 7)
     else:
-        prev_month_first_day: date = dt_utc.replace(day=1)
-        prev_first_monday: date = prev_month_first_day + timedelta(days=(7 - prev_month_first_day.weekday()) % 7)
-    return datetime.combine(prev_first_monday, time(hour=10), timezone.utc)
+        cur_month_first_day: date = ts.replace(day=1)
+        prev_first_monday: date = cur_month_first_day + timedelta(days=(7 - cur_month_first_day.weekday()) % 7)
+    return datetime.combine(prev_first_monday, time(hour=10), ts.tzinfo)
 
 
-def get_next_first_monday_10_AM(
-    previous_first_monday_10_AM: datetime,
-) -> datetime:
-    # the next month's first Monday may be 4 or 5 weeks later
-    four_weeks_later: datetime = previous_first_monday_10_AM + timedelta(weeks=4)
-    if four_weeks_later.month != previous_first_monday_10_AM.month:
+def get_season_end(season_start: datetime) -> datetime:
+    """
+    Returns the end of the season given a timestamp representing the start of a season.
+    A season ends exactly 4 or 5 weeks after it started depending on the month.
+    """
+    four_weeks_later: datetime = season_start + timedelta(weeks=4)
+    if four_weeks_later.month != season_start.month:
         return four_weeks_later
     return four_weeks_later + timedelta(weeks=1)
 
 
-def get_time_since_last_thursday_10_Am(ts: datetime) -> timedelta:
-    seconds_since_midnight = (ts - ts.replace(hour=10, minute=0, second=0, microsecond=0)).total_seconds()
-    offset = (ts.weekday() - 3) % 7
-    # Find datetime for last Thursday 10:00 am UTC (roughly the begin of the war days)
-    begin_of_war_days = ts - timedelta(days=offset, seconds=seconds_since_midnight)
-    return ts - begin_of_war_days
+def get_time_since_last_clan_war_started(ts: datetime) -> timedelta:
+    """
+    Returns the timedelta since the start of the most recent clan war.
+    Clan wars start roughly 10 AM UTC on Thursday.
+    """
+    days_since_last_thursday = (ts.weekday() - 3) % 7
+    if days_since_last_thursday == 0 and ts.time() < time(hour=10):
+        # the war beginning today has not yet started
+        days_since_last_thursday = 7
+    last_thursday = ts - timedelta(days=days_since_last_thursday)
+    last_thursday_10am = datetime.combine(last_thursday, time(hour=10), ts.tzinfo)
+    return ts - last_thursday_10am

@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List
 
 import numpy as np
@@ -7,9 +7,9 @@ import pandas as pd
 
 from player_ranking.models.clan import Clan
 from player_ranking.datetime_util import (
-    get_next_first_monday_10_AM,
-    get_previous_first_monday_10_AM,
-    get_time_since_last_thursday_10_Am,
+    get_season_end,
+    get_season_start,
+    get_time_since_last_clan_war_started,
 )
 from player_ranking.excuse_acceptor import ExcuseAcceptor
 from player_ranking.models.ranking_parameters import RankingParameters
@@ -63,7 +63,7 @@ class EvaluationPerformer:
     def adjust_war_weights(self):
         weights = self.params.ratingWeights
         now = datetime.now(timezone.utc)
-        time_since_start = get_time_since_last_thursday_10_Am(now)
+        time_since_start = get_time_since_last_clan_war_started(now)
         if time_since_start > timedelta(days=4):
             # Training days are currently happening, do not count current war
             war_progress = 0
@@ -83,11 +83,10 @@ class EvaluationPerformer:
     def adjust_season_weights(self) -> None:
         weights = self.params.ratingWeights
         now: datetime = datetime.now(timezone.utc)
-        today: date = now.date()
 
         # the season ends at 10AM UTC on the first Monday of a month
-        current_season_start: datetime = get_previous_first_monday_10_AM(today)
-        current_season_end: datetime = get_next_first_monday_10_AM(current_season_start)
+        current_season_start: datetime = get_season_start(now)
+        current_season_end: datetime = get_season_end(current_season_start)
 
         season_progress: float = (now - current_season_start) / (current_season_end - current_season_start)
         LOGGER.info(f"Season progress: {season_progress}")
