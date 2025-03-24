@@ -1,4 +1,6 @@
-# The best ClanManager for Supercell's Clash Royale
+[![Compute Ranking](https://github.com/vraudszus/ClanManager/actions/workflows/compute-ranking.yaml/badge.svg?branch=main)](https://github.com/vraudszus/ClanManager/actions/workflows/compute-ranking.yaml)
+
+# Advanced clan analytics for Clash Royale
 
 - Get detailed insights in the performance of your clan members
 - Who performs well? And who doesn't?
