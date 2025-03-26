@@ -32,6 +32,7 @@ jobs:
           CR_API_TOKEN: ${{ secrets.CR_API_TOKEN }}
           GSHEETS_SERVICE_ACCOUNT_KEY: ${{ secrets.GSHEETS_SERVICE_ACCOUNT_KEY }}
           GSHEET_SPREADSHEET_ID: ${{ secrets.GSHEET_SPREADSHEET_ID }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
         run: |
           cd cli-client
           poetry run player-ranking
