@@ -64,7 +64,7 @@ properties:
     minimum: 0
     maximum: 1000
 
-  promotionDemotionRequirements:
+  promotionRequirements:
     description: "when to recommend a member/elder for promotion/demotion"
     type: object
     properties:
@@ -149,7 +149,7 @@ required:
   - clanTag
   - ratingWeights
   - newPlayerWarLogRating
-  - promotionDemotionRequirements
+  - promotionRequirements
   - excuses
   - googleSheets
   - ratingFile

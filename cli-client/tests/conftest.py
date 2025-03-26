@@ -6,7 +6,7 @@ from player_ranking.models.clan import Clan
 from player_ranking.models.ranking_parameters import (
     RankingParameters,
     RatingWeights,
-    PromotionDemotionRequirements,
+    PromotionRequirements,
     Excuses,
     GoogleSheets,
 )
@@ -26,7 +26,7 @@ def ranking_parameters() -> RankingParameters:
             currentSeasonTrophies=0.1,
         ),
         newPlayerWarLogRating=500,
-        promotionDemotionRequirements=PromotionDemotionRequirements(
+        promotionRequirements=PromotionRequirements(
             minFameForCountingWar=2700,
             minCountingWars=8,
         ),

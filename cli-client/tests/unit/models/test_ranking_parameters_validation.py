@@ -21,7 +21,7 @@ def minimal_yaml_as_dict() -> dict[str, Any]:
             "currentSeasonTrophies": 0,
         },
         "newPlayerWarLogRating": 500,
-        "promotionDemotionRequirements": {
+        "promotionRequirements": {
             "minFameForCountingWar": 2000,
             "minCountingWars": 5,
         },
@@ -79,9 +79,9 @@ def test_validate_with_minimal_yaml_succeeds(minimal_yaml_as_dict):
 
     assert actual.newPlayerWarLogRating == minimal_yaml_as_dict["newPlayerWarLogRating"]
 
-    expected_requirements = minimal_yaml_as_dict["promotionDemotionRequirements"]
-    assert actual.promotionDemotionRequirements.minFameForCountingWar == expected_requirements["minFameForCountingWar"]
-    assert actual.promotionDemotionRequirements.minCountingWars == expected_requirements["minCountingWars"]
+    expected_requirements = minimal_yaml_as_dict["promotionRequirements"]
+    assert actual.promotionRequirements.minFameForCountingWar == expected_requirements["minFameForCountingWar"]
+    assert actual.promotionRequirements.minCountingWars == expected_requirements["minCountingWars"]
 
     expected_excuses = minimal_yaml_as_dict["excuses"]
     assert actual.excuses.notInClanExcuse == expected_excuses["notInClanExcuse"]

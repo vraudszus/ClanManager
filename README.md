@@ -5,7 +5,7 @@
 - Get detailed insights in the performance of your clan members
 - Who performs well? And who doesn't?
 - Evaluation criteria can be adjusted to fit your clan's needs
-- Get reminded of pending promotions or demotions
+- Get reminded of pending promotions
 - Evaluation can take real life events into account
 - Takes input from and outputs to a Google sheet that you can share with your clan
 
@@ -37,6 +37,7 @@
 CR_API_TOKEN=
 GSHEET_SPREADSHEET_ID=
 GSHEETS_SERVICE_ACCOUNT_KEY=
+DISCORD_WEBHOOK=
 ```
 
 - Add your credentials to `cli-client/.env`
@@ -48,6 +49,8 @@ GSHEETS_SERVICE_ACCOUNT_KEY=
     You can obtain the credential by performing steps 1-3 from [this](https://genezio.com/deployment-platform/blog/google-sheets-as-apis/#step-2-create-a-service-account-and-generate-a-key-file)
     guide. You need to grant the service account editor permissions.
     Copy&Paste the contents of the downloaded `.json` file to this variable.
+  - `DISCORD_WEBHOOK` URL of Discord webhook for a channel to post promotion requirements to.
+    Read [this](https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks) article to learn more.
 
 ## Usage
 

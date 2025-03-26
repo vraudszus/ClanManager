@@ -43,7 +43,7 @@ class RatingWeights:
 
 
 @dataclass
-class PromotionDemotionRequirements:
+class PromotionRequirements:
     minFameForCountingWar: int
     minCountingWars: int
 
@@ -73,7 +73,7 @@ class RankingParameters:
     clanTag: str
     ratingWeights: RatingWeights
     newPlayerWarLogRating: int
-    promotionDemotionRequirements: PromotionDemotionRequirements
+    promotionRequirements: PromotionRequirements
     excuses: Excuses
     googleSheets: GoogleSheets
     ratingFile: str
