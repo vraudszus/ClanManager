@@ -25,7 +25,7 @@ class CRAPIClient:
     def get_current_members(self) -> Clan:
         LOGGER.info("Building list of current members...")
         path = f"/clans/{url_encode(self.clan_tag)}"
-        raw_members = self.get_json(path)["memberList"]
+        raw_members = self.__get_json(path)["memberList"]
         clan = Clan()
         for raw in raw_members:
             clan.add(ClanMember(tag=raw["tag"], name=raw["name"], role=raw["role"], trophies=raw["trophies"]))
@@ -35,7 +35,7 @@ class CRAPIClient:
     def get_war_statistics(self, clan: Clan):
         LOGGER.info("Fetching river race statistics...")
         path = f"/clans/{url_encode(self.clan_tag)}/riverracelog"
-        river_races = self.get_json(path)["items"]
+        river_races = self.__get_json(path)["items"]
 
         war_statistics = {}
         for player_tag in clan.get_tags():
@@ -61,7 +61,7 @@ class CRAPIClient:
     def get_current_river_race(self):
         LOGGER.info("Fetching current river race...")
         path = f"/clans/{url_encode(self.clan_tag)}/currentriverrace"
-        clan = self.get_json(path)["clan"]
+        clan = self.__get_json(path)["clan"]
 
         current_war_statistics = {}
         for participant in clan["participants"]:
@@ -74,7 +74,7 @@ class CRAPIClient:
         LOGGER.info(f"Fetching path of legends statistics for all {len(clan)} members...")
 
         def get_stats_for_player(player: ClanMember):
-            raw_player = self.get_json(f"/players/{url_encode(player.tag)}")
+            raw_player = self.__get_json(f"/players/{url_encode(player.tag)}")
 
             current_season = raw_player["currentPathOfLegendSeasonResult"]
             previous_season = raw_player["lastPathOfLegendSeasonResult"]
@@ -89,7 +89,7 @@ class CRAPIClient:
 
         LOGGER.info("Collection of path of legends statistics has finished.")
 
-    def get_json(self, path: str):
+    def __get_json(self, path: str):
         headers = {"Accept": "application/json", "authorization": f"Bearer {self.api_token}"}
         response = requests.get(API_ENDPOINT + path, headers=headers)
         response.raise_for_status()
