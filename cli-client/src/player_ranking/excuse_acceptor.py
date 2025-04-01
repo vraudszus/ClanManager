@@ -50,7 +50,8 @@ class ExcuseAcceptor:
     def get_new_fame(self, player_tag: str, old_fame: int, war_id: str, factor: float = 1) -> int:
         excuse = self.excuses.at[player_tag, war_id]
         player_name = self.clan.get(player_tag).name
-        if not excuse or math.isnan(old_fame):
+        if not excuse or math.isnan(old_fame) or (war_id == "current" and excuse == self.excuse_params.notInClanExcuse):
+            # no excuse found, player did not participate, or player was first as not in clan but since rejoined
             return old_fame
         self.excuse_params.check_excuse(excuse)
         if self.excuse_params.should_ignore_war(excuse):
