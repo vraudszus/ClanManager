@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  update-dependencies:
+  compute-ranking:
     runs-on: ubuntu-latest
     environment: prod
     steps:

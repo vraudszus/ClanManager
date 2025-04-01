@@ -85,7 +85,7 @@ class GSheetsAPIClient:
         else:
             return pd.DataFrame()
 
-    def update_excuse_sheet(self, clan: Clan, current_war, war_history: pd.DataFrame, not_in_clan_str):
+    def update_excuse_sheet(self, clan: Clan, current_war, war_history: pd.DataFrame, not_in_clan_excuse: str):
         excuses = self.get_excuses()
 
         def empty_cells_with_numbers(x):
@@ -109,8 +109,11 @@ class GSheetsAPIClient:
         wars.insert(0, "current", current_war)
         wars = wars.map(empty_cells_with_numbers)
         missing = excuses.index.difference(wars.index)
-        missing_df = pd.DataFrame(index=missing, columns=wars.columns).fillna(not_in_clan_str)
+        missing_df = pd.DataFrame(index=missing, columns=wars.columns).fillna(not_in_clan_excuse)
         wars = pd.concat([wars, missing_df])
+
+        # remove not in clan excuses for players that have since rejoined
+        wars.loc[wars.index.isin(clan.get_tags()) & (wars["current"] == not_in_clan_excuse), "current"] = ""
 
         try:
             # the column next to current
@@ -134,7 +137,7 @@ class GSheetsAPIClient:
                     axis=1,
                 )
                 excuses.columns = wars.columns.insert(0, "name")
-                tags_to_remove = excuses[excuses.eq(not_in_clan_str).sum(1) >= 11].index
+                tags_to_remove = excuses[excuses.eq(not_in_clan_excuse).sum(1) >= 11].index
                 if not tags_to_remove.empty:
                     LOGGER.info(f"Removed tags {tags_to_remove.tolist()} from sheet {self.sheet_names.excuses}")
                     excuses.drop(tags_to_remove, inplace=True)
