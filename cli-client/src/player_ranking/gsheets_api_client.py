@@ -113,7 +113,7 @@ class GSheetsAPIClient:
         wars = pd.concat([wars, missing_df])
 
         # remove not in clan excuses for players that have since rejoined
-        wars.loc[wars.index.isin(clan.get_tags()) & (wars["current"] == not_in_clan_excuse), "current"] = ""
+        excuses.loc[excuses.index.isin(clan.get_tags()) & (excuses["current"] == not_in_clan_excuse), "current"] = ""
 
         try:
             # the column next to current
