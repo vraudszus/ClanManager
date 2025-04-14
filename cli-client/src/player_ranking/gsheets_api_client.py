@@ -85,32 +85,15 @@ class GSheetsAPIClient:
         else:
             return pd.DataFrame()
 
-    def update_excuse_sheet(self, clan: Clan, current_war, war_history: pd.DataFrame, not_in_clan_excuse: str):
+    def update_excuse_sheet(
+        self, clan: Clan, current_war: pd.Series, war_history: pd.DataFrame, not_in_clan_excuse: str
+    ):
         excuses = self.get_excuses()
 
-        def empty_cells_with_numbers(x):
-            try:
-                float(x)
-                return np.nan
-            except ValueError:
-                return x
-
         all_tags = clan.get_tags()
-        missingFromCurrentWar = pd.Index(all_tags).difference(current_war.index)
-        if not missingFromCurrentWar.empty:
-            LOGGER.info(f"Missing from current war: {missingFromCurrentWar}")
-        goodKeys = current_war.index.intersection(all_tags)
-        # goodKeys is needed as some members do not show up in current_war
-        # at season begin when not logging in some time after the end the previous war
-        current_war = current_war[goodKeys]
-
-        wars = war_history.copy()
-        wars.drop(columns="mean", inplace=True)
-        wars.insert(0, "current", current_war)
-        wars = wars.map(empty_cells_with_numbers)
-        missing = excuses.index.difference(wars.index)
-        missing_df = pd.DataFrame(index=missing, columns=wars.columns).fillna(not_in_clan_excuse)
-        wars = pd.concat([wars, missing_df])
+        wars = self._pad_wars_with_current_war_and_former_members(
+            all_tags, current_war, war_history, excuses, not_in_clan_excuse
+        )
 
         # remove not in clan excuses for players that have since rejoined
         excuses.loc[excuses.index.isin(clan.get_tags()) & (excuses["current"] == not_in_clan_excuse), "current"] = ""
@@ -127,33 +110,76 @@ class GSheetsAPIClient:
         else:
             columns_to_shift = war_history.columns.tolist().index(last_recorded_cw)
             if columns_to_shift > 0:
-                LOGGER.info(f"Shift existing {self.sheet_names.excuses} by {columns_to_shift} columns")
-                excuses = pd.concat(
-                    [
-                        excuses.iloc[:, :1],
-                        wars.iloc[:, :columns_to_shift],
-                        excuses.iloc[:, 1:-columns_to_shift],
-                    ],
-                    axis=1,
-                )
-                excuses.columns = wars.columns.insert(0, "name")
-                tags_to_remove = excuses[excuses.eq(not_in_clan_excuse).sum(1) >= 11].index
-                if not tags_to_remove.empty:
-                    LOGGER.info(f"Removed tags {tags_to_remove.tolist()} from sheet {self.sheet_names.excuses}")
-                    excuses.drop(tags_to_remove, inplace=True)
+                self._prepend_missing_wars_to_excuses(columns_to_shift, excuses, wars, not_in_clan_excuse)
             else:
                 LOGGER.info(f"Restore old {self.sheet_names.excuses}")
-                for tag in all_tags:
-                    # add rows for new players
-                    if tag not in excuses.index:
-                        excuses.loc[tag] = pd.Series()
+                self._add_rows_for_new_players(excuses, all_tags)
 
-        # add names
-        excuses.index.name = "tag"
+        self._format_excuses_for_display(excuses, clan)
+        return self.write_sheet(excuses, self.sheet_names.excuses)
+
+    @staticmethod
+    def _pad_wars_with_current_war_and_former_members(
+        all_tags: list[str],
+        current_war: pd.Series,
+        war_history: pd.DataFrame,
+        excuses: pd.DataFrame,
+        not_in_clan_excuse: str,
+    ) -> pd.DataFrame:
+        def empty_cells_with_numbers(x):
+            try:
+                float(x)
+                return np.nan
+            except ValueError:
+                return x
+
+        missing_from_current_war = pd.Index(all_tags).difference(current_war.index)
+        if not missing_from_current_war.empty:
+            LOGGER.warning(f"Missing from current war: {missing_from_current_war}")
+        good_keys = current_war.index.intersection(all_tags)
+        # good_keys is needed as some members do not show up in current_war
+        # at season begin when not logging in some time after the end the previous war
+        current_war = current_war[good_keys]
+
+        wars = war_history.copy()
+        wars.drop(columns="mean", inplace=True)
+        wars.insert(0, "current", current_war)
+        wars = wars.map(empty_cells_with_numbers)
+        missing = excuses.index.difference(wars.index)
+        missing_df = pd.DataFrame(index=missing, columns=wars.columns).fillna(not_in_clan_excuse)
+        return pd.concat([wars, missing_df])
+
+    def _prepend_missing_wars_to_excuses(
+        self, columns_to_shift: int, excuses: pd.DataFrame, wars: pd.DataFrame, not_in_clan_excuse: str
+    ) -> None:
+        LOGGER.info(f"Shift existing {self.sheet_names.excuses} by {columns_to_shift} columns")
+        excuses = pd.concat(
+            [
+                excuses.iloc[:, :1],
+                wars.iloc[:, :columns_to_shift],
+                excuses.iloc[:, 1:-columns_to_shift],
+            ],
+            axis=1,
+        )
+        excuses.columns = wars.columns.insert(0, "name")
+        tags_to_remove = excuses[excuses.eq(not_in_clan_excuse).sum(1) >= 11].index
+        if not tags_to_remove.empty:
+            LOGGER.info(f"Removed tags {tags_to_remove.tolist()} from sheet {self.sheet_names.excuses}")
+            excuses.drop(tags_to_remove, inplace=True)
+
+    @staticmethod
+    def _add_rows_for_new_players(excuses: pd.DataFrame, all_tags: list[str]) -> None:
+        for tag in all_tags:
+            if tag not in excuses.index:
+                excuses.loc[tag] = pd.Series()
+
+    @staticmethod
+    def _format_excuses_for_display(excuses: pd.DataFrame, clan: Clan) -> None:
         if "name" not in excuses.columns:
             excuses.insert(loc=0, column="name", value=pd.Series(clan.get_tag_name_map()))
         for tag, _ in excuses[excuses["name"].isna()].iterrows():
-            if tag in all_tags:
+            if tag in clan.get_tags():
                 excuses.at[tag, "name"] = clan.get(tag).name
+
+        excuses.index.name = "tag"
         excuses.sort_values(by="name", inplace=True)
-        return self.write_sheet(excuses, self.sheet_names.excuses)
