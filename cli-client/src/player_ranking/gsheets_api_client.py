@@ -110,7 +110,7 @@ class GSheetsAPIClient:
         else:
             columns_to_shift = war_history.columns.tolist().index(last_recorded_cw)
             if columns_to_shift > 0:
-                self._prepend_missing_wars_to_excuses(columns_to_shift, excuses, wars, not_in_clan_excuse)
+                excuses = self._prepend_missing_wars_to_excuses(columns_to_shift, excuses, wars, not_in_clan_excuse)
             else:
                 LOGGER.info(f"Restore old {self.sheet_names.excuses}")
                 self._add_rows_for_new_players(excuses, all_tags)
@@ -151,7 +151,7 @@ class GSheetsAPIClient:
 
     def _prepend_missing_wars_to_excuses(
         self, columns_to_shift: int, excuses: pd.DataFrame, wars: pd.DataFrame, not_in_clan_excuse: str
-    ) -> None:
+    ) -> pd.DataFrame:
         LOGGER.info(f"Shift existing {self.sheet_names.excuses} by {columns_to_shift} columns")
         excuses = pd.concat(
             [
@@ -166,6 +166,7 @@ class GSheetsAPIClient:
         if not tags_to_remove.empty:
             LOGGER.info(f"Removed tags {tags_to_remove.tolist()} from sheet {self.sheet_names.excuses}")
             excuses.drop(tags_to_remove, inplace=True)
+        return excuses
 
     @staticmethod
     def _add_rows_for_new_players(excuses: pd.DataFrame, all_tags: list[str]) -> None:
