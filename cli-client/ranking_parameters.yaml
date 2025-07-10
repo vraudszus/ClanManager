@@ -14,7 +14,7 @@ ratingWeights:
 newPlayerWarLogRating: 500
 
 promotionRequirements:
-  minFameForCountingWar: 2700
+  minFameForCountingWar: 2500
   minCountingWars: 8
 
 excuses:
