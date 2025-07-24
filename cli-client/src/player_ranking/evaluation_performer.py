@@ -15,6 +15,7 @@ from player_ranking.excuse_acceptor import ExcuseAcceptor
 from player_ranking.models.ranking_parameters import RankingParameters
 
 LOGGER = logging.getLogger(__name__)
+MAX_LEAGUE_NUMBER = 7
 
 
 def normalize(val: int, max_val: int, min_val: int, default: int) -> float | None:
@@ -173,19 +174,19 @@ class EvaluationPerformer:
         previous_league_min = self.clan.get_min("previous_season_league_number")
         previous_league_max = self.clan.get_max("previous_season_league_number")
 
-        # only count league 10 players for trophy min, otherwise it will always be 0
-        previous_trophies_min = self.clan.filter(lambda p: p.previous_season_league_number == 10).get_min(
-            "previous_season_trophies"
-        )
+        # only count players in the highest league for trophy min, otherwise it will always be 0
+        previous_trophies_min = self.clan.filter(
+            lambda p: p.previous_season_league_number == MAX_LEAGUE_NUMBER
+        ).get_min("previous_season_trophies")
         previous_trophies_max = self.clan.get_max("previous_season_trophies")
 
         for player in self.clan.get_members():
             previous_league = player.previous_season_league_number
             player.previous_league = normalize(previous_league, previous_league_max, previous_league_min, 1000)
 
-            # only grant points to players in league 10
+            # only grant points to players in the highest league
             player.previous_trophies = 0
-            if previous_league == 10:
+            if previous_league == MAX_LEAGUE_NUMBER:
                 player.previous_trophies = normalize(
                     player.previous_season_trophies, previous_trophies_max, previous_trophies_min, 1000
                 )
@@ -197,8 +198,8 @@ class EvaluationPerformer:
         current_league_min = self.clan.get_min("current_season_league_number")
         current_league_max = self.clan.get_max("current_season_league_number")
 
-        # only count league 10 players for trophy min, otherwise it will always be 0
-        current_trophies_min = self.clan.filter(lambda p: p.current_season_league_number == 10).get_min(
+        # only count players in the highest league for trophy min, otherwise it will always be 0
+        current_trophies_min = self.clan.filter(lambda p: p.current_season_league_number == MAX_LEAGUE_NUMBER).get_min(
             "current_season_trophies"
         )
         current_trophies_max = self.clan.get_max("current_season_trophies")
@@ -207,9 +208,9 @@ class EvaluationPerformer:
             current_league = player.current_season_league_number
             player.current_league = normalize(current_league, current_league_max, current_league_min, 1000)
 
-            # only grant points to players in league 10
+            # only grant points to players in the highest league
             player.current_trophies = 0
-            if current_league == 10:
+            if current_league == MAX_LEAGUE_NUMBER:
                 player.current_trophies = normalize(
                     player.current_season_trophies, current_trophies_max, current_trophies_min, 1000
                 )
