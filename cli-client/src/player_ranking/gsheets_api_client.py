@@ -49,24 +49,17 @@ class GSheetsAPIClient:
 
     def write_sheet(self, df, sheet_name: str):
         self._clear_sheet(sheet_name)
-        csv_string = df.to_csv(sep=";", float_format="%.0f")
-        body = {
-            "requests": [
-                {
-                    "pasteData": {
-                        "coordinate": {
-                            "sheetId": self._get_sheet_id(sheet_name),
-                            "rowIndex": "0",
-                            "columnIndex": "0",
-                        },
-                        "data": csv_string,
-                        "type": "PASTE_NORMAL",
-                        "delimiter": ";",
-                    }
-                }
-            ]
-        }
-        request = self.service.spreadsheets().batchUpdate(spreadsheetId=self.spreadsheet_id, body=body)
+        values = self._df_to_sheets_values(df)
+        request = (
+            self.service.spreadsheets()
+            .values()
+            .update(
+                spreadsheetId=self.spreadsheet_id,
+                range=sheet_name,
+                valueInputOption="USER_ENTERED",
+                body={"values": values},
+            )
+        )
         response = request.execute()
         return response
 
@@ -184,3 +177,27 @@ class GSheetsAPIClient:
 
         excuses.index.name = "tag"
         excuses.sort_values(by="name", inplace=True)
+
+    @staticmethod
+    def _df_to_sheets_values(df: pd.DataFrame) -> list[list[str]]:
+        """
+        Convert a DataFrame to a list-of-lists suitable for Google Sheets API values.update.
+        - All numbers are formatted as integers (like float_format="%.0f").
+        """
+        # Reset index so it becomes a column
+        df_reset = df.reset_index()
+
+        def clean_value(x):
+            if pd.isna(x):
+                return ""
+            if isinstance(x, float):
+                return int(x)
+            return x
+
+        cleaned = df_reset.map(clean_value)
+
+        # Create header row (index name + column names)
+        header = cleaned.columns.tolist()
+
+        values = [header] + cleaned.values.tolist()
+        return values
