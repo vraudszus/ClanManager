@@ -20,7 +20,7 @@ def minimal_yaml_as_dict() -> dict[str, Any]:
             "currentSeasonLeague": 0,
             "currentSeasonTrophies": 0,
         },
-        "newPlayerWarLogRating": 500,
+        "newPlayerWarRating": 500,
         "promotionRequirements": {
             "minFameForCountingWar": 2000,
             "minCountingWars": 5,
@@ -77,7 +77,7 @@ def test_validate_with_minimal_yaml_succeeds(minimal_yaml_as_dict):
     assert actual.ratingWeights.currentSeasonLeague == expected_weights["currentSeasonLeague"]
     assert actual.ratingWeights.currentSeasonTrophies == expected_weights["currentSeasonTrophies"]
 
-    assert actual.newPlayerWarLogRating == minimal_yaml_as_dict["newPlayerWarLogRating"]
+    assert actual.newPlayerWarRating == minimal_yaml_as_dict["newPlayerWarRating"]
 
     expected_requirements = minimal_yaml_as_dict["promotionRequirements"]
     assert actual.promotionRequirements.minFameForCountingWar == expected_requirements["minFameForCountingWar"]

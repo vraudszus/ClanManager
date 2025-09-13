@@ -12,7 +12,7 @@ LOGGING_CONFIG = {
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
-            "level": "INFO",
+            "level": "DEBUG",
             "formatter": "simple",
             "stream": "ext://sys.stdout",
         },
@@ -23,7 +23,7 @@ LOGGING_CONFIG = {
             "handlers": ["console"],
         },
         "player_ranking": {
-            "level": "INFO",
+            "level": "DEBUG",
             "handlers": ["console"],
             "propagate": False,
         },

@@ -58,8 +58,8 @@ properties:
       - currentSeasonTrophies
     additionalProperties: false
 
-  newPlayerWarLogRating:
-    description: "war history rating to use when player has not played any wars with this clan"
+  newPlayerWarRating:
+    description: "rating to use when player has not played any wars with this clan (for both the current and history ratings)"
     type: integer
     minimum: 0
     maximum: 1000
@@ -148,7 +148,7 @@ properties:
 required:
   - clanTag
   - ratingWeights
-  - newPlayerWarLogRating
+  - newPlayerWarRating
   - promotionRequirements
   - excuses
   - googleSheets

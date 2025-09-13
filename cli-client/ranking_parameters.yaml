@@ -11,7 +11,7 @@ ratingWeights:
   currentSeasonTrophies: 0.1
 
 # must be between 0 and 1000
-newPlayerWarLogRating: 500
+newPlayerWarRating: 500
 
 promotionRequirements:
   minFameForCountingWar: 2500

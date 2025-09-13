@@ -72,7 +72,7 @@ class GoogleSheets:
 class RankingParameters:
     clanTag: str
     ratingWeights: RatingWeights
-    newPlayerWarLogRating: int
+    newPlayerWarRating: int
     promotionRequirements: PromotionRequirements
     excuses: Excuses
     googleSheets: GoogleSheets

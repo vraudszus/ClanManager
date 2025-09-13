@@ -122,14 +122,22 @@ class EvaluationPerformer:
         self.evaluate_ladder()
 
         for player in self.clan.get_members():
+            LOGGER.debug(f"Starting evaluation of player {player}")
+
             if player.war_history is None:
-                war_history_rating = self.params.newPlayerWarLogRating
-                LOGGER.info(f"Defaulted war log rating to {self.params.newPlayerWarLogRating} for {player.name}")
+                war_history_rating = self.params.newPlayerWarRating
+                LOGGER.info(f"Defaulted war log rating to {self.params.newPlayerWarRating} for {player.name}")
             else:
                 war_history_rating = player.war_history
 
+            if player.current_war is None:
+                current_war_rating = self.params.newPlayerWarRating
+                LOGGER.info(f"Defaulted current war rating to {self.params.newPlayerWarRating} for {player.name}")
+            else:
+                current_war_rating = player.current_war
+
             player.rating = weights.ladder * player.ladder
-            player.rating += weights.currentWar * player.current_war
+            player.rating += weights.currentWar * current_war_rating
             player.rating += weights.previousSeasonLeague * player.previous_league
             player.rating += weights.currentSeasonLeague * player.current_league
             player.rating += weights.previousSeasonTrophies * player.previous_trophies
