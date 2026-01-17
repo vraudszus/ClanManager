@@ -58,17 +58,22 @@ class CRAPIClient:
         df = pd.DataFrame.from_dict(war_statistics, orient="index")
         return df.sort_index(axis=1, ascending=False, key=lambda x: x.astype(float))
 
-    def get_current_river_race(self):
+    def get_current_river_race(self, last_war_id: str):
         LOGGER.info("Fetching current river race...")
         path = f"/clans/{url_encode(self.clan_tag)}/currentriverrace"
-        clan = self.__get_json(path)["clan"]
+        current_race = self.__get_json(path)
+        section_index = current_race["sectionIndex"]
+        clan = current_race["clan"]
 
         current_war_statistics = {}
         for participant in clan["participants"]:
             player_tag = participant["tag"]
             current_war_statistics[player_tag] = int(participant["fame"])
         LOGGER.info("Handling of current river race has finished.")
-        return pd.Series(current_war_statistics)
+
+        last_war_season_id = int(last_war_id.split(".")[0])
+        season_id = last_war_season_id if section_index > 0 else last_war_season_id + 1
+        return pd.Series(current_war_statistics, name=f"{season_id}.{section_index}")
 
     def get_path_statistics(self, clan: Clan) -> None:
         LOGGER.info(f"Fetching path of legends statistics for all {len(clan)} members...")

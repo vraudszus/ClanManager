@@ -37,3 +37,6 @@ class Clan:
 
     def __len__(self) -> int:
         return len(self._members)
+
+    def __contains__(self, tag):
+        return tag in self._members

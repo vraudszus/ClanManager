@@ -6,6 +6,7 @@ from player_ranking.constants import ROOT_DIR
 from player_ranking.cr_api_client import CRAPIClient
 from player_ranking.discord_client import DiscordClient
 from player_ranking.evaluation_performer import EvaluationPerformer
+from player_ranking.excuse_handler import ExcuseHandler
 from player_ranking.gsheets_api_client import GSheetsAPIClient
 from player_ranking.models.clan import Clan
 from player_ranking.models.clan_member import ClanMember
@@ -45,17 +46,18 @@ def perform_evaluation(plot: bool):
     cr_api = CRAPIClient(cr_api_token, params.clanTag)
     clan = cr_api.get_current_members()
     war_log = cr_api.get_war_statistics(clan)
-    current_war = cr_api.get_current_river_race()
+    current_war = cr_api.get_current_river_race(war_log.columns[0])
     cr_api.get_path_statistics(clan)
 
     gsheets_client = GSheetsAPIClient(
         service_account_key=gsheets_service_account_key,
         spreadsheet_id=gsheets_spreadsheet_id,
-        sheet_names=params.googleSheets,
     )
-    excuses_df = gsheets_client.get_excuses()
+    excuses_df = gsheets_client.fetch_sheet(sheet_name=params.googleSheets.excuses)
+    excuses = ExcuseHandler(excuses=excuses_df, clan=clan, excuse_params=params.excuses)
+    excuses.update_excuses(current_war=current_war, war_log=war_log)
 
-    performance = EvaluationPerformer(clan, current_war, war_log, params, excuses_df).evaluate()
+    performance = EvaluationPerformer(clan, current_war, war_log, params, excuses).evaluate()
 
     history_wrapper.append_rating_history(ROOT_DIR / params.ratingHistoryFile, performance["rating"])
     if plot:
@@ -73,8 +75,8 @@ def perform_evaluation(plot: bool):
     performance.to_csv(ROOT_DIR / params.ratingFile, sep=";", float_format="%.0f")
     print(performance)
 
-    gsheets_client.write_sheet(performance, params.googleSheets.rating)
-    gsheets_client.update_excuse_sheet(clan, current_war, war_log, params.excuses.notInClanExcuse)
+    gsheets_client.write_sheet(df=performance, sheet_name=params.googleSheets.rating)
+    gsheets_client.write_sheet(df=excuses.get_excuses_as_df(), sheet_name=params.googleSheets.excuses)
 
 
 def read_env_variable(env_var: str) -> str:

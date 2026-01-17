@@ -5,13 +5,13 @@ from typing import List
 import numpy as np
 import pandas as pd
 
+from player_ranking.excuse_handler import ExcuseHandler
 from player_ranking.models.clan import Clan
 from player_ranking.datetime_util import (
     get_season_end,
     get_season_start,
     get_time_since_last_clan_war_started,
 )
-from player_ranking.excuse_acceptor import ExcuseAcceptor
 from player_ranking.models.ranking_parameters import RankingParameters
 
 LOGGER = logging.getLogger(__name__)
@@ -33,14 +33,14 @@ class EvaluationPerformer:
         current_war: pd.Series,
         war_log: pd.DataFrame,
         ranking_parameters: RankingParameters,
-        excuses: pd.DataFrame,
+        excuses: ExcuseHandler,
     ) -> None:
         self.clan: Clan = clan
         self.current_war = current_war
         self.war_log = war_log
         self.war_progress = None
         self.params = ranking_parameters
-        self.excuses: pd.DataFrame = excuses
+        self.excuses: ExcuseHandler = excuses
 
     def evaluate(self) -> pd.DataFrame:
         self.adjust_inputs()
@@ -52,14 +52,9 @@ class EvaluationPerformer:
         self.adjust_season_weights()
         self.account_for_shorter_wars()
         self.ignore_selected_wars()
-        ExcuseAcceptor(
-            excuse_params=self.params.excuses,
-            clan=self.clan,
-            current_war=self.current_war,
-            war_log=self.war_log,
-            excuses=self.excuses,
-            war_progress=self.war_progress,
-        ).adjust_fame_with_excuses()
+        self.excuses.adjust_fame_with_excuses(
+            current_war=self.current_war, war_log=self.war_log, war_progress=self.war_progress
+        )
 
     def adjust_war_weights(self):
         weights = self.params.ratingWeights

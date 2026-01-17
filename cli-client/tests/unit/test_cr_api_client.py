@@ -68,11 +68,25 @@ def test_get_current_riverrace(requests_mock: Mocker, cr_api_client: CRAPIClient
                 {"tag": "#1", "fame": 100},
                 {"tag": "#2", "fame": 200},
             ]
-        }
+        },
+        "sectionIndex": 2,
     }
     requests_mock.get(mock_url, json=mock_response, status_code=200)
-    current_war = cr_api_client.get_current_river_race()
-    pd.testing.assert_series_equal(current_war, pd.Series({"#1": 100, "#2": 200}))
+    current_war = cr_api_client.get_current_river_race("100.1")
+    pd.testing.assert_series_equal(current_war, pd.Series({"#1": 100, "#2": 200}, name="100.2"))
+
+    mock_response = {
+        "clan": {
+            "participants": [
+                {"tag": "#1", "fame": 100},
+                {"tag": "#2", "fame": 200},
+            ]
+        },
+        "sectionIndex": 0,
+    }
+    requests_mock.get(mock_url, json=mock_response, status_code=200)
+    current_war = cr_api_client.get_current_river_race("100.1")
+    pd.testing.assert_series_equal(current_war, pd.Series({"#1": 100, "#2": 200}, name="101.0"))
 
 
 def test_get_war_statistics(requests_mock: Mocker, cr_api_client: CRAPIClient, clan: Clan):
