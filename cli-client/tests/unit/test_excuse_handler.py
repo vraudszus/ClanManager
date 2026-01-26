@@ -480,5 +480,6 @@ def get_updated_excuses(
     handler.update_excuses(current_war=current_war, war_log=war_history)
     return handler.get_excuses_as_df()
 
+
 def create_player(tag: str, name: str) -> ClanMember:
     return ClanMember(tag, name, "member", 100, 50, 100, datetime(2026, 1, 26))
