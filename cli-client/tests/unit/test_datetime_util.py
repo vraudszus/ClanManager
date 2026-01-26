@@ -1,6 +1,10 @@
 from datetime import datetime, timedelta
 
-from player_ranking.datetime_util import get_season_start, get_season_end, get_time_since_last_clan_war_started
+from player_ranking.datetime_util import (
+    get_season_start,
+    get_season_end,
+    get_time_since_last_clan_war_started,
+)
 
 
 def test_get_season_start_from_mid_month():
@@ -72,4 +76,6 @@ def test_get_time_since_last_clan_war_started_1_minute_after_start():
 
 def test_get_time_since_last_clan_war_started_1_minute_before_start():
     timestamp = datetime(2025, 3, 20, 9, 59)
-    assert get_time_since_last_clan_war_started(timestamp) == timedelta(days=6, hours=23, minutes=59)
+    assert get_time_since_last_clan_war_started(timestamp) == timedelta(
+        days=6, hours=23, minutes=59
+    )

@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 import requests
 from requests_mock.mocker import Mocker
+from datetime import datetime, timezone
 
 from player_ranking.cr_api_client import CRAPIClient, url_encode
 from player_ranking.models.clan import Clan
@@ -19,8 +20,8 @@ def cr_api_client() -> CRAPIClient:
 @pytest.fixture
 def clan() -> Clan:
     clan = Clan()
-    clan.add(ClanMember("#1", "player1", "member", 100))
-    clan.add(ClanMember("#2", "player2", "elder", 200))
+    clan.add(ClanMember("#1", "player1", "member", 100, 50, 100, datetime(2026, 1, 26)))
+    clan.add(ClanMember("#2", "player2", "elder", 200, 50, 100, datetime(2026, 1, 26)))
     return clan
 
 
@@ -37,12 +38,20 @@ def test_get_current_members(requests_mock: Mocker, cr_api_client: CRAPIClient):
                 "name": "player1",
                 "role": "member",
                 "trophies": 100,
+                "expLevel": 50,
+                "donations": 200,
+                "donationsReceived": 100,
+                "lastSeen": "20260126T192338.000Z",
             },
             {
                 "tag": "#2",
                 "name": "player2",
                 "role": "elder",
                 "trophies": 200,
+                "expLevel": 75,
+                "donations": 100,
+                "donationsReceived": 200,
+                "lastSeen": "20260126T192338.000Z",
             },
         ]
     }
@@ -54,10 +63,16 @@ def test_get_current_members(requests_mock: Mocker, cr_api_client: CRAPIClient):
     assert members[0].name == "player1"
     assert members[0].role == "member"
     assert members[0].trophies == 100
+    assert members[0].level == 50
+    assert members[0].net_donations == 100
+    assert members[0].last_seen == datetime(2026, 1, 26, 19, 23, 38, tzinfo=timezone.utc)
     assert members[1].tag == "#2"
     assert members[1].name == "player2"
     assert members[1].role == "elder"
     assert members[1].trophies == 200
+    assert members[1].level == 75
+    assert members[1].net_donations == -100
+    assert members[1].last_seen == datetime(2026, 1, 26, 19, 23, 38, tzinfo=timezone.utc)
 
 
 def test_get_current_riverrace(requests_mock: Mocker, cr_api_client: CRAPIClient):
@@ -97,7 +112,12 @@ def test_get_war_statistics(requests_mock: Mocker, cr_api_client: CRAPIClient, c
                 "seasonId": 1,
                 "sectionIndex": 2,
                 "standings": [
-                    {"clan": {"tag": "#OTHER_CLAN", "participants": [{"tag": "#OTHER_PLAYER", "fame": 10}]}},
+                    {
+                        "clan": {
+                            "tag": "#OTHER_CLAN",
+                            "participants": [{"tag": "#OTHER_PLAYER", "fame": 10}],
+                        }
+                    },
                     {
                         "clan": {
                             "tag": "#ABCDEF",
@@ -113,7 +133,12 @@ def test_get_war_statistics(requests_mock: Mocker, cr_api_client: CRAPIClient, c
                 "seasonId": 2,
                 "sectionIndex": 3,
                 "standings": [
-                    {"clan": {"tag": "#OTHER_CLAN", "participants": [{"tag": "#OTHER_PLAYER", "fame": 20}]}},
+                    {
+                        "clan": {
+                            "tag": "#OTHER_CLAN",
+                            "participants": [{"tag": "#OTHER_PLAYER", "fame": 20}],
+                        }
+                    },
                     {
                         "clan": {
                             "tag": "#ABCDEF",

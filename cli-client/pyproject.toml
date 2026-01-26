@@ -29,7 +29,7 @@ decorator = "^5.1.1"
 requests-mock = "^1.12.1"
 
 [tool.ruff]
-line-length = 120
+line-length = 100
 
 [build-system]
 requires = ["poetry-core"]

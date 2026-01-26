@@ -84,7 +84,9 @@ class EvaluationPerformer:
         current_season_start: datetime = get_season_start(now)
         current_season_end: datetime = get_season_end(current_season_start)
 
-        season_progress: float = (now - current_season_start) / (current_season_end - current_season_start)
+        season_progress: float = (now - current_season_start) / (
+            current_season_end - current_season_start
+        )
         LOGGER.info(f"Season progress: {season_progress}")
 
         redistributed_season_weight = weights.currentSeasonLeague * season_progress
@@ -121,13 +123,17 @@ class EvaluationPerformer:
 
             if player.war_history is None:
                 war_history_rating = self.params.newPlayerWarRating
-                LOGGER.info(f"Defaulted war log rating to {self.params.newPlayerWarRating} for {player.name}")
+                LOGGER.info(
+                    f"Defaulted war log rating to {self.params.newPlayerWarRating} for {player.name}"
+                )
             else:
                 war_history_rating = player.war_history
 
             if player.current_war is None:
                 current_war_rating = self.params.newPlayerWarRating
-                LOGGER.info(f"Defaulted current war rating to {self.params.newPlayerWarRating} for {player.name}")
+                LOGGER.info(
+                    f"Defaulted current war rating to {self.params.newPlayerWarRating} for {player.name}"
+                )
             else:
                 current_war_rating = player.current_war
 
@@ -162,8 +168,12 @@ class EvaluationPerformer:
         war_log_max_fame = self.war_log["mean"].max()
         war_log_min_fame = self.war_log["mean"].min()
         for player in self.clan.get_members():
-            player.avg_fame = self.war_log.at[player.tag, "mean"] if player.tag in self.war_log.index else None
-            player.war_history = normalize(player.avg_fame, war_log_max_fame, war_log_min_fame, 1000)
+            player.avg_fame = (
+                self.war_log.at[player.tag, "mean"] if player.tag in self.war_log.index else None
+            )
+            player.war_history = normalize(
+                player.avg_fame, war_log_max_fame, war_log_min_fame, 1000
+            )
 
     def evaluate_current_war(self) -> None:
         current_max_fame = self.current_war.max()
@@ -185,13 +195,18 @@ class EvaluationPerformer:
 
         for player in self.clan.get_members():
             previous_league = player.previous_season_league_number
-            player.previous_league = normalize(previous_league, previous_league_max, previous_league_min, 1000)
+            player.previous_league = normalize(
+                previous_league, previous_league_max, previous_league_min, 1000
+            )
 
             # only grant points to players in the highest league
             player.previous_trophies = 0
             if previous_league == MAX_LEAGUE_NUMBER:
                 player.previous_trophies = normalize(
-                    player.previous_season_trophies, previous_trophies_max, previous_trophies_min, 1000
+                    player.previous_season_trophies,
+                    previous_trophies_max,
+                    previous_trophies_min,
+                    1000,
                 )
 
             # join path of legends related metric to reduce number of columns
@@ -202,14 +217,16 @@ class EvaluationPerformer:
         current_league_max = self.clan.get_max("current_season_league_number")
 
         # only count players in the highest league for trophy min, otherwise it will always be 0
-        current_trophies_min = self.clan.filter(lambda p: p.current_season_league_number == MAX_LEAGUE_NUMBER).get_min(
-            "current_season_trophies"
-        )
+        current_trophies_min = self.clan.filter(
+            lambda p: p.current_season_league_number == MAX_LEAGUE_NUMBER
+        ).get_min("current_season_trophies")
         current_trophies_max = self.clan.get_max("current_season_trophies")
 
         for player in self.clan.get_members():
             current_league = player.current_season_league_number
-            player.current_league = normalize(current_league, current_league_max, current_league_min, 1000)
+            player.current_league = normalize(
+                current_league, current_league_max, current_league_min, 1000
+            )
 
             # only grant points to players in the highest league
             player.current_trophies = 0
@@ -223,6 +240,10 @@ class EvaluationPerformer:
 
     def build_rating_df(self) -> pd.DataFrame:
         rating = pd.DataFrame([player.__dict__ for player in self.clan.get_members()])
+
+        now: datetime = datetime.now(timezone.utc)
+        rating["last_seen"] = (now - rating["last_seen"]).dt.days.astype(str) + " days ago"
+
         rating = rating.set_index("tag")
         rating = rating[
             [
@@ -234,6 +255,9 @@ class EvaluationPerformer:
                 "avg_fame",
                 "current_season",
                 "previous_season",
+                "level",
+                "net_donations",
+                "last_seen",
             ]
         ]
         return rating.sort_values("rating", ascending=False)

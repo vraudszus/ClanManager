@@ -5,7 +5,9 @@ from dotenv import load_dotenv
 from player_ranking import player_ranking, logging_config
 
 ARGUMENT_PARSER = argparse.ArgumentParser()
-ARGUMENT_PARSER.add_argument("-p", "--plot", help="Plot the rating history to a file", action="store_true")
+ARGUMENT_PARSER.add_argument(
+    "-p", "--plot", help="Plot the rating history to a file", action="store_true"
+)
 
 
 def run():

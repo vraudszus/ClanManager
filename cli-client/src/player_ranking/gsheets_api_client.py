@@ -34,7 +34,12 @@ class GSheetsAPIClient:
         return response
 
     def fetch_sheet(self, sheet_name: str) -> pd.DataFrame:
-        result = self.service.spreadsheets().values().get(spreadsheetId=self.spreadsheet_id, range=sheet_name).execute()
+        result = (
+            self.service.spreadsheets()
+            .values()
+            .get(spreadsheetId=self.spreadsheet_id, range=sheet_name)
+            .execute()
+        )
         data = result.get("values", [])
         # pad short rows to prevent mismatch between column header count and data columns
         data = list(zip(*itertools.zip_longest(*data)))
@@ -56,7 +61,11 @@ class GSheetsAPIClient:
         raise KeyError(f"Sheet {sheet_name} not found in Google spreadsheet.")
 
     def _clear_sheet(self, sheet_name: str):
-        request = self.service.spreadsheets().values().clear(spreadsheetId=self.spreadsheet_id, range=sheet_name)
+        request = (
+            self.service.spreadsheets()
+            .values()
+            .clear(spreadsheetId=self.spreadsheet_id, range=sheet_name)
+        )
         return request.execute()
 
     @staticmethod

@@ -16,7 +16,9 @@ from player_ranking.models.ranking_parameters_validation import RankingParameter
 LOGGER = logging.getLogger(__name__)
 
 
-def get_pending_promotions(clan: Clan, war_log, requirements: PromotionRequirements) -> list[ClanMember]:
+def get_pending_promotions(
+    clan: Clan, war_log, requirements: PromotionRequirements
+) -> list[ClanMember]:
     war_log = war_log.copy()
     war_log = war_log.drop("mean", axis=1)
     min_fame = requirements.minFameForCountingWar
@@ -25,7 +27,9 @@ def get_pending_promotions(clan: Clan, war_log, requirements: PromotionRequireme
     only_members = clan.filter(lambda member: member.role == "member")
     promotion_deserving_logs = war_log[war_log >= min_fame].count(axis="columns")
     promotion_deserving_logs = promotion_deserving_logs[promotion_deserving_logs >= min_wars]
-    promotion_deserving_logs = promotion_deserving_logs[promotion_deserving_logs.index.isin(only_members.get_tags())]
+    promotion_deserving_logs = promotion_deserving_logs[
+        promotion_deserving_logs.index.isin(only_members.get_tags())
+    ]
     pending_promotions = promotion_deserving_logs.index.map(lambda k: only_members.get(k)).to_list()
     if pending_promotions:
         LOGGER.info(f"Pending promotions for: {', '.join([p.name for p in pending_promotions])}")
@@ -35,7 +39,9 @@ def get_pending_promotions(clan: Clan, war_log, requirements: PromotionRequireme
 
 
 def perform_evaluation(plot: bool):
-    params: RankingParameters = RankingParameterValidator(open(ROOT_DIR / "ranking_parameters.yaml")).validate()
+    params: RankingParameters = RankingParameterValidator(
+        open(ROOT_DIR / "ranking_parameters.yaml")
+    ).validate()
 
     cr_api_token: str = read_env_variable("CR_API_TOKEN")
     gsheets_spreadsheet_id: str = read_env_variable("GSHEET_SPREADSHEET_ID")
@@ -59,24 +65,34 @@ def perform_evaluation(plot: bool):
 
     performance = EvaluationPerformer(clan, current_war, war_log, params, excuses).evaluate()
 
-    history_wrapper.append_rating_history(ROOT_DIR / params.ratingHistoryFile, performance["rating"])
+    history_wrapper.append_rating_history(
+        ROOT_DIR / params.ratingHistoryFile, performance["rating"]
+    )
     if plot:
         history_wrapper.plot_rating_history(
             ROOT_DIR / params.ratingHistoryFile, clan, ROOT_DIR / params.ratingHistoryImage
         )
-    pending_promotions: list[ClanMember] = get_pending_promotions(clan, war_log, params.promotionRequirements)
+    pending_promotions: list[ClanMember] = get_pending_promotions(
+        clan, war_log, params.promotionRequirements
+    )
     if pending_promotions:
-        DiscordClient(discord_webhook).post_pending_promotions(params.promotionRequirements, pending_promotions)
+        DiscordClient(discord_webhook).post_pending_promotions(
+            params.promotionRequirements, pending_promotions
+        )
 
     performance = performance.reset_index(drop=True)
     performance.index += 1
-    performance.loc["mean"] = performance.iloc[:, 2:].mean()
-    performance.loc["median"] = performance.iloc[:-1, 2:].median()
+    performance.loc["mean"] = performance.iloc[:, 2:-1].mean()
+    performance.loc["p75"] = performance.iloc[:, 2:-1].quantile(0.75)
+    performance.loc["p50"] = performance.iloc[:, 2:-1].quantile(0.50)
+    performance.loc["p25"] = performance.iloc[:, 2:-1].quantile(0.25)
     performance.to_csv(ROOT_DIR / params.ratingFile, sep=";", float_format="%.0f")
     print(performance)
 
     gsheets_client.write_sheet(df=performance, sheet_name=params.googleSheets.rating)
-    gsheets_client.write_sheet(df=excuses.get_excuses_as_df(), sheet_name=params.googleSheets.excuses)
+    gsheets_client.write_sheet(
+        df=excuses.get_excuses_as_df(), sheet_name=params.googleSheets.excuses
+    )
 
 
 def read_env_variable(env_var: str) -> str:

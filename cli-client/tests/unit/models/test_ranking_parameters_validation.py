@@ -80,7 +80,10 @@ def test_validate_with_minimal_yaml_succeeds(minimal_yaml_as_dict):
     assert actual.newPlayerWarRating == minimal_yaml_as_dict["newPlayerWarRating"]
 
     expected_requirements = minimal_yaml_as_dict["promotionRequirements"]
-    assert actual.promotionRequirements.minFameForCountingWar == expected_requirements["minFameForCountingWar"]
+    assert (
+        actual.promotionRequirements.minFameForCountingWar
+        == expected_requirements["minFameForCountingWar"]
+    )
     assert actual.promotionRequirements.minCountingWars == expected_requirements["minCountingWars"]
 
     expected_excuses = minimal_yaml_as_dict["excuses"]
@@ -110,7 +113,9 @@ def test_validate_with_invalid_rating_weights_fails(minimal_yaml_as_dict):
     minimal_yaml_as_dict["ratingWeights"]["unknownWeight"] = 1
     with pytest.raises(ValidationError) as exc_info:
         RankingParameterValidator(yaml.dump(minimal_yaml_as_dict)).validate()
-    assert "Additional properties are not allowed ('unknownWeight' was unexpected)" in str(exc_info.value)
+    assert "Additional properties are not allowed ('unknownWeight' was unexpected)" in str(
+        exc_info.value
+    )
     del minimal_yaml_as_dict["ratingWeights"]["unknownWeight"]
 
     minimal_yaml_as_dict["ratingWeights"]["ladder"] = 0.9

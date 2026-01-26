@@ -1,5 +1,7 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+
 import requests
 import pandas as pd
 
@@ -28,7 +30,20 @@ class CRAPIClient:
         raw_members = self.__get_json(path)["memberList"]
         clan = Clan()
         for raw in raw_members:
-            clan.add(ClanMember(tag=raw["tag"], name=raw["name"], role=raw["role"], trophies=raw["trophies"]))
+            last_seen: datetime = datetime.strptime(raw["lastSeen"], "%Y%m%dT%H%M%S.%fZ").replace(
+                tzinfo=timezone.utc
+            )
+            clan.add(
+                ClanMember(
+                    tag=raw["tag"],
+                    name=raw["name"],
+                    role=raw["role"],
+                    trophies=raw["trophies"],
+                    level=raw["expLevel"],
+                    net_donations=raw["donations"] - raw["donationsReceived"],
+                    last_seen=last_seen,
+                )
+            )
         LOGGER.info(f"{len(clan)} current members have been found.")
         return clan
 

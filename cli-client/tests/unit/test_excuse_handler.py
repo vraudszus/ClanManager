@@ -1,4 +1,5 @@
 import math
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -97,7 +98,7 @@ def test_update_current_war():
     ExcuseHandler.update_current_war(player_not_in_clan, clan, pd.Series([], name="100.0"), "a")
     assert player_not_in_clan.loc["#0", "100.0"] == "a"
 
-    clan.add(ClanMember("#1", "player1", "member", 100))
+    clan.add(create_player("#1", "player1"))
 
     player_not_in_clan = pd.DataFrame({"name": ["player1"], "100.0": ["a"]}, index=["#1"])
     ExcuseHandler.update_current_war(player_not_in_clan, clan, pd.Series([], name="100.0"), "a")
@@ -118,15 +119,15 @@ def test_add_missing_players():
         index=["#0", "#1", "#2"],
     )
 
-    clan.add(ClanMember("#1", "player1", "member", 100))
-    clan.add(ClanMember("#2", "player2", "elder", 200))
+    clan.add(create_player("#1", "player1"))
+    clan.add(create_player("#2", "player2"))
 
     # all current players are already in df
     assert df.index.tolist() == ["#0", "#1", "#2"]
     ExcuseHandler.add_missing_players(df, clan)
     assert df.index.tolist() == ["#0", "#1", "#2"]
 
-    clan.add(ClanMember("#2", "player2_new", "member", 300))
+    clan.add(create_player("#2", "player2_new"))
 
     # all current players are already in df, but player2 has a new name
     assert df.index.tolist() == ["#0", "#1", "#2"]
@@ -134,7 +135,7 @@ def test_add_missing_players():
     assert df.index.tolist() == ["#0", "#1", "#2"]
     assert df.loc["#2"].tolist() == ["player2_new", ""]
 
-    clan.add(ClanMember("#3", "player3", "member", 300))
+    clan.add(create_player("#3", "player3"))
 
     # player is missing from df
     assert df.index.tolist() == ["#0", "#1", "#2"]
@@ -175,8 +176,8 @@ def test_update_excuses_basic_flow():
 
     # clan has player #1 (with updated name) and a new player #2
     clan = Clan()
-    clan.add(ClanMember("#1", "player1", "member", 100))
-    clan.add(ClanMember("#2", "player2", "member", 200))
+    clan.add(create_player("#1", "player1"))
+    clan.add(create_player("#2", "player2"))
 
     # current war is newer than existing data
     current_war = pd.Series([], name="100.1")
@@ -228,7 +229,9 @@ def test_update_excuses_truncates_long_absent_player():
 
     current_war = pd.Series([], name="100.1")
     war_history = pd.DataFrame({k: [] for k in war_columns})
-    result = get_updated_excuses(old_excuses=excuses, clan=clan, current_war=current_war, war_history=war_history)
+    result = get_updated_excuses(
+        old_excuses=excuses, clan=clan, current_war=current_war, war_history=war_history
+    )
 
     # player is dropped entirely due to long absence
     assert result.empty
@@ -251,12 +254,14 @@ def test_update_excuses_does_not_modify_existing_war_columns():
     )
 
     clan = Clan()
-    clan.add(ClanMember("#1", "player1", "member", 100))
+    clan.add(create_player("#1", "player1"))
     # player #2 is NOT in clan
 
     current_war = pd.Series([], name="100.1")
     war_history = pd.DataFrame({"100.0": [], "99.9": []})
-    result = get_updated_excuses(old_excuses=excuses, clan=clan, current_war=current_war, war_history=war_history)
+    result = get_updated_excuses(
+        old_excuses=excuses, clan=clan, current_war=current_war, war_history=war_history
+    )
 
     # sanity: current war column added
     assert "100.1" in result.columns
@@ -281,12 +286,14 @@ def test_update_excuses_with_empty_initial_dataframe():
     excuses = pd.DataFrame()
 
     clan = Clan()
-    clan.add(ClanMember("#1", "alice", "member", 100))
-    clan.add(ClanMember("#2", "bob", "member", 200))
+    clan.add(create_player("#1", "alice"))
+    clan.add(create_player("#2", "bob"))
 
     current_war = pd.Series([], name="100.1")
     war_history = pd.DataFrame({"100.0": []})
-    result = get_updated_excuses(old_excuses=excuses, clan=clan, current_war=current_war, war_history=war_history)
+    result = get_updated_excuses(
+        old_excuses=excuses, clan=clan, current_war=current_war, war_history=war_history
+    )
 
     # structure
     assert result.index.name == "tag"
@@ -379,8 +386,8 @@ def test_get_new_fame_invalid_excuse_raises():
 
 def test_adjust_fame_updates_only_excused_players_current_war():
     clan = Clan()
-    clan.add(ClanMember("#1", "player1", "member", 100))
-    clan.add(ClanMember("#2", "player2", "member", 100))
+    clan.add(create_player("#1", "player1"))
+    clan.add(create_player("#2", "player2"))
 
     params = Excuses(notInClanExcuse="NIC", newPlayerExcuse="NPE", personalExcuse="PE")
 
@@ -409,7 +416,7 @@ def test_adjust_fame_updates_only_excused_players_current_war():
 
 def test_adjust_fame_updates_war_log_history():
     clan = Clan()
-    clan.add(ClanMember("#1", "player1", "member", 100))
+    clan.add(create_player("#1", "player1"))
 
     params = Excuses(notInClanExcuse="NIC", newPlayerExcuse="NPE", personalExcuse="PE")
 
@@ -439,7 +446,7 @@ def test_adjust_fame_updates_war_log_history():
 
 def test_adjust_fame_player_not_in_war_log_is_ignored():
     clan = Clan()
-    clan.add(ClanMember("#1", "player1", "member", 100))
+    clan.add(create_player("#1", "player1"))
 
     params = Excuses(notInClanExcuse="NIC", newPlayerExcuse="NPE", personalExcuse="PE")
 
@@ -472,3 +479,6 @@ def get_updated_excuses(
 
     handler.update_excuses(current_war=current_war, war_log=war_history)
     return handler.get_excuses_as_df()
+
+def create_player(tag: str, name: str) -> ClanMember:
+    return ClanMember(tag, name, "member", 100, 50, 100, datetime(2026, 1, 26))

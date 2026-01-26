@@ -6,10 +6,10 @@ from player_ranking.models.clan_member import ClanMember
 from player_ranking.models.ranking_parameters import PromotionRequirements
 
 LOGGER = logging.getLogger(__name__)
-CLAN_WARS_ICON_URL = "https://static.wikia.nocookie.net/clashroyale/images/9/9f/War_Shield.png/revision/latest"
-ELITE_BARBS_ICON_URL = (
-    "https://static.wikia.nocookie.net/clashroyale/images/e/e8/EliteBarbariansCard.png/revision/latest"
+CLAN_WARS_ICON_URL = (
+    "https://static.wikia.nocookie.net/clashroyale/images/9/9f/War_Shield.png/revision/latest"
 )
+ELITE_BARBS_ICON_URL = "https://static.wikia.nocookie.net/clashroyale/images/e/e8/EliteBarbariansCard.png/revision/latest"
 
 
 class DiscordClient:

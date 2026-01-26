@@ -51,7 +51,9 @@ def ranking_parameters() -> RankingParameters:
 @pytest.fixture
 def evaluation_performer(ranking_parameters: RankingParameters) -> EvaluationPerformer:
     clan = Clan()
-    excuses = ExcuseHandler(excuses=pd.DataFrame(), clan=clan, excuse_params=ranking_parameters.excuses)
+    excuses = ExcuseHandler(
+        excuses=pd.DataFrame(), clan=clan, excuse_params=ranking_parameters.excuses
+    )
     return EvaluationPerformer(
         clan=clan,
         current_war=pd.Series(

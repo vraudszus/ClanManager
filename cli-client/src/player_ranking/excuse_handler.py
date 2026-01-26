@@ -28,7 +28,9 @@ class ExcuseHandler:
     def update_excuses(self, current_war: pd.Series, war_log: pd.DataFrame) -> None:
         updated_excuses: pd.DataFrame = self._excuses.copy()
 
-        updated_excuses = self.add_missing_wars(excuses=updated_excuses, current_war=current_war, wars=war_log)
+        updated_excuses = self.add_missing_wars(
+            excuses=updated_excuses, current_war=current_war, wars=war_log
+        )
         self.add_missing_players(excuses=updated_excuses, clan=self._clan)
         self.update_current_war(
             excuses=updated_excuses,
@@ -41,7 +43,9 @@ class ExcuseHandler:
 
         self._excuses = updated_excuses
 
-    def adjust_fame_with_excuses(self, current_war: pd.Series, war_log: pd.DataFrame, war_progress: float) -> None:
+    def adjust_fame_with_excuses(
+        self, current_war: pd.Series, war_log: pd.DataFrame, war_progress: float
+    ) -> None:
         for player in self._clan.get_members():
             # current river race
             current_war.at[player.tag] = self.get_new_fame(
@@ -64,7 +68,9 @@ class ExcuseHandler:
                     )
 
     @staticmethod
-    def add_missing_wars(excuses: pd.DataFrame, current_war: pd.Series, wars: pd.DataFrame) -> pd.DataFrame:
+    def add_missing_wars(
+        excuses: pd.DataFrame, current_war: pd.Series, wars: pd.DataFrame
+    ) -> pd.DataFrame:
         if excuses.columns.empty:
             excuses["name"] = ""
 
@@ -87,16 +93,26 @@ class ExcuseHandler:
             excuses.loc[player.tag, "name"] = player.name
 
     @staticmethod
-    def update_current_war(excuses: pd.DataFrame, clan: Clan, current_war: pd.Series, not_in_clan_excuse: str) -> None:
+    def update_current_war(
+        excuses: pd.DataFrame, clan: Clan, current_war: pd.Series, not_in_clan_excuse: str
+    ) -> None:
         current_war_label = current_war.name
         current_war_excuses = excuses[current_war_label]
         for tag, excuse in current_war_excuses.items():
             if excuse == not_in_clan_excuse and tag in clan:
-                LOGGER.info(f"Unsetting excuse {not_in_clan_excuse} for player {tag} as player is in clan.")
+                LOGGER.info(
+                    f"Unsetting excuse {not_in_clan_excuse} for player {tag} as player is in clan."
+                )
                 excuses.loc[tag, current_war_label] = ""
-            if tag not in clan and (excuse is None or excuse == "") and excuse != not_in_clan_excuse:
+            if (
+                tag not in clan
+                and (excuse is None or excuse == "")
+                and excuse != not_in_clan_excuse
+            ):
                 excuses.loc[tag, current_war_label] = not_in_clan_excuse
-                LOGGER.info(f"Setting excuse {not_in_clan_excuse} for player {tag} as player is not in clan.")
+                LOGGER.info(
+                    f"Setting excuse {not_in_clan_excuse} for player {tag} as player is not in clan."
+                )
 
     @staticmethod
     def truncate(excuses: pd.DataFrame, not_in_clan_excuse: str) -> None:
@@ -115,7 +131,9 @@ class ExcuseHandler:
         # 12 columns: name + current war + 10 completed wars
         columns_to_drop = excuses.columns[12:]
         if not columns_to_drop.empty:
-            LOGGER.info(f"Drop columns {columns_to_drop.tolist()} from excuses as wars are too old.")
+            LOGGER.info(
+                f"Drop columns {columns_to_drop.tolist()} from excuses as wars are too old."
+            )
             excuses.drop(columns_to_drop, axis=1, inplace=True)
 
     @staticmethod
@@ -125,7 +143,12 @@ class ExcuseHandler:
 
     @staticmethod
     def get_new_fame(
-        excuse_params: Excuses, player_name: str, excuse: str, old_fame: int | float, war_id: str, factor: float = 1
+        excuse_params: Excuses,
+        player_name: str,
+        excuse: str,
+        old_fame: int | float,
+        war_id: str,
+        factor: float = 1,
     ) -> int:
         if not excuse or math.isnan(old_fame):
             # no excuse found or player did not participate

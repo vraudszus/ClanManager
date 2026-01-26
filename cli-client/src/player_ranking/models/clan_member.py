@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 
@@ -9,6 +10,9 @@ class ClanMember:
     name: str
     role: str
     trophies: int
+    level: int
+    net_donations: int
+    last_seen: datetime
 
     # ratings
     rating: float = Optional[float]
@@ -29,8 +33,20 @@ class ClanMember:
     current_season_trophies: int = Optional[int]
     previous_season_trophies: int = Optional[int]
 
-    def __init__(self, tag: str, name: str, role: str, trophies: int):
+    def __init__(
+        self,
+        tag: str,
+        name: str,
+        role: str,
+        trophies: int,
+        level: int,
+        net_donations: int,
+        last_seen: datetime,
+    ):
         self.tag: str = tag
         self.name: str = name
         self.role: str = role
         self.trophies: int = trophies
+        self.level: int = level
+        self.net_donations: int = net_donations
+        self.last_seen: datetime = last_seen

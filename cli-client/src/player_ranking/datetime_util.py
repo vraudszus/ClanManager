@@ -9,10 +9,14 @@ def get_season_start(ts: datetime) -> datetime:
     if ts.weekday() >= ts.day or (ts.weekday() == 0 and ts.day < 8 and ts.time() < time(hour=10)):
         # the current month didn't yet have a Monday 10 AM
         prev_month_first_day: date = (ts - timedelta(weeks=1)).replace(day=1)
-        prev_first_monday: date = prev_month_first_day + timedelta(days=(7 - prev_month_first_day.weekday()) % 7)
+        prev_first_monday: date = prev_month_first_day + timedelta(
+            days=(7 - prev_month_first_day.weekday()) % 7
+        )
     else:
         cur_month_first_day: date = ts.replace(day=1)
-        prev_first_monday: date = cur_month_first_day + timedelta(days=(7 - cur_month_first_day.weekday()) % 7)
+        prev_first_monday: date = cur_month_first_day + timedelta(
+            days=(7 - cur_month_first_day.weekday()) % 7
+        )
     return datetime.combine(prev_first_monday, time(hour=10), ts.tzinfo)
 
 
