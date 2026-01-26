@@ -82,10 +82,10 @@ def perform_evaluation(plot: bool):
 
     performance = performance.reset_index(drop=True)
     performance.index += 1
-    performance.loc["mean"] = performance.iloc[:, 2:-1].mean()
-    performance.loc["p75"] = performance.iloc[:, 2:-1].quantile(0.75)
-    performance.loc["p50"] = performance.iloc[:, 2:-1].quantile(0.50)
-    performance.loc["p25"] = performance.iloc[:, 2:-1].quantile(0.25)
+    performance.loc["mean"] = performance.iloc[:, 1:-1].mean()
+    performance.loc["p75"] = performance.iloc[:, 1:-1].quantile(0.75)
+    performance.loc["p50"] = performance.iloc[:, 1:-1].quantile(0.50)
+    performance.loc["p25"] = performance.iloc[:, 1:-1].quantile(0.25)
     performance.to_csv(ROOT_DIR / params.ratingFile, sep=";", float_format="%.0f")
     print(performance)
 
