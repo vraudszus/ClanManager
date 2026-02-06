@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 
 @dataclass
@@ -15,23 +14,23 @@ class ClanMember:
     last_seen: datetime
 
     # ratings
-    rating: float = Optional[float]
-    ladder: float = Optional[float]
-    current_war: float = Optional[float]
-    war_history: float = Optional[float]
-    previous_league: float = Optional[float]
-    current_league: float = Optional[float]
-    previous_trophies: float = Optional[float]
-    current_trophies: float = Optional[float]
-    current_season: float = Optional[float]
-    previous_season: float = Optional[float]
+    rating: float | None = None
+    ladder: float | None = None
+    current_war: float | None = None
+    war_history: float | None = None
+    previous_league: float | None = None
+    current_league: float | None = None
+    previous_trophies: float | None = None
+    current_trophies: float | None = None
+    current_season: float | None = None
+    previous_season: float | None = None
 
     # player stats
-    avg_fame: float = Optional[float]
-    current_season_league_number: int = Optional[int]
-    previous_season_league_number: int = Optional[int]
-    current_season_trophies: int = Optional[int]
-    previous_season_trophies: int = Optional[int]
+    avg_fame: float | None = None
+    current_season_league_number: int | None = None
+    previous_season_league_number: int | None = None
+    current_season_trophies: int | None = None
+    previous_season_trophies: int | None = None
 
     def __init__(
         self,
