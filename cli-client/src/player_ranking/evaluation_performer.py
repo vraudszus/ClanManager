@@ -50,7 +50,6 @@ class EvaluationPerformer:
     def adjust_inputs(self) -> None:
         self.adjust_war_weights()
         self.adjust_season_weights()
-        self.account_for_shorter_wars()
         self.ignore_selected_wars()
         self.excuses.adjust_fame_with_excuses(
             current_war=self.current_war, war_log=self.war_log, war_progress=self.war_progress
@@ -104,10 +103,6 @@ class EvaluationPerformer:
         self.war_log.loc[:, ignored_wars_in_history] = np.nan
         if ignored_wars and max([float(i) for i in ignored_wars]) > float(self.war_log.columns[0]):
             self.current_war.values[:] = 0
-
-    def account_for_shorter_wars(self):
-        shorter_wars_in_history = list(set(self.params.threeDayWars) & set(self.war_log.columns))
-        self.war_log.loc[:, shorter_wars_in_history] *= 4 / 3
 
     def evaluate_ratings(self) -> None:
         weights = self.params.ratingWeights

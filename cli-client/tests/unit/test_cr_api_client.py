@@ -103,6 +103,21 @@ def test_get_current_riverrace(requests_mock: Mocker, cr_api_client: CRAPIClient
     current_war = cr_api_client.get_current_river_race("100.1")
     pd.testing.assert_series_equal(current_war, pd.Series({"#1": 100, "#2": 200}, name="101.0"))
 
+    # test fame scaling for short wars, a short war is identified by 'finishTime' being set
+    mock_response = {
+        "clan": {
+            "finishTime": "20260208T094604.000Z",
+            "participants": [
+                {"tag": "#1", "fame": 100},
+                {"tag": "#2", "fame": 200},
+            ],
+        },
+        "sectionIndex": 0,
+    }
+    requests_mock.get(mock_url, json=mock_response, status_code=200)
+    current_war = cr_api_client.get_current_river_race("100.1")
+    pd.testing.assert_series_equal(current_war, pd.Series({"#1": 133, "#2": 266}, name="101.0"))
+
 
 def test_get_war_statistics(requests_mock: Mocker, cr_api_client: CRAPIClient, clan: Clan):
     mock_url = "https://proxy.royaleapi.dev/v1/clans/%23ABCDEF/riverracelog"
@@ -111,16 +126,19 @@ def test_get_war_statistics(requests_mock: Mocker, cr_api_client: CRAPIClient, c
             {
                 "seasonId": 1,
                 "sectionIndex": 2,
+                "createdDate": "20260202T094303.000Z",
                 "standings": [
                     {
                         "clan": {
                             "tag": "#OTHER_CLAN",
+                            "finishTime": "19691231T235959.000Z",
                             "participants": [{"tag": "#OTHER_PLAYER", "fame": 10}],
                         }
                     },
                     {
                         "clan": {
                             "tag": "#ABCDEF",
+                            "finishTime": "19691231T235959.000Z",
                             "participants": [
                                 {"tag": "#1", "fame": 100},
                                 {"tag": "#2", "fame": 200},
@@ -132,19 +150,22 @@ def test_get_war_statistics(requests_mock: Mocker, cr_api_client: CRAPIClient, c
             {
                 "seasonId": 2,
                 "sectionIndex": 3,
+                "createdDate": "20260202T094303.000Z",
                 "standings": [
                     {
                         "clan": {
                             "tag": "#OTHER_CLAN",
+                            "finishTime": "20260202T094303.000Z",
                             "participants": [{"tag": "#OTHER_PLAYER", "fame": 20}],
                         }
                     },
                     {
                         "clan": {
                             "tag": "#ABCDEF",
+                            "finishTime": "20260201T094303.000Z",
                             "participants": [
-                                {"tag": "#1", "fame": 200},
-                                {"tag": "#3", "fame": 300},
+                                {"tag": "#1", "fame": 300},
+                                {"tag": "#3", "fame": 200},
                             ],
                         }
                     },
@@ -156,9 +177,10 @@ def test_get_war_statistics(requests_mock: Mocker, cr_api_client: CRAPIClient, c
     war_log = cr_api_client.get_war_statistics(clan)
 
     # non-current members aren't included, while current members have null for wars they didn't participate in
+    # As 'finishTime' of war '2.3' is one day before 'createDate', the fame was scaled by 4/3
     pd.testing.assert_frame_equal(
         war_log,
-        pd.DataFrame({"2.3": [200.0, None], "1.2": [100, 200]}, index=["#1", "#2"]),
+        pd.DataFrame({"2.3": [400.0, None], "1.2": [100, 200]}, index=["#1", "#2"]),
     )
 
 

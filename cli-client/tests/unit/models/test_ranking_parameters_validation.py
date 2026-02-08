@@ -38,7 +38,6 @@ def minimal_yaml_as_dict() -> dict[str, Any]:
         "ratingHistoryFile": "file2",
         "ratingHistoryImage": "file3",
         "ignoreWars": [],
-        "threeDayWars": [],
     }
 
 
@@ -99,7 +98,6 @@ def test_validate_with_minimal_yaml_succeeds(minimal_yaml_as_dict):
     assert actual.ratingHistoryFile == minimal_yaml_as_dict["ratingHistoryFile"]
     assert actual.ratingHistoryImage == minimal_yaml_as_dict["ratingHistoryImage"]
     assert actual.ignoreWars == minimal_yaml_as_dict["ignoreWars"]
-    assert actual.threeDayWars == minimal_yaml_as_dict["threeDayWars"]
 
 
 def test_validate_with_invalid_clantag_fails(minimal_yaml_as_dict):
@@ -135,15 +133,13 @@ def test_validate_with_invalid_rating_weights_fails(minimal_yaml_as_dict):
 
 
 def test_validate_with_special_wars_succeeds(minimal_yaml_as_dict):
-    minimal_yaml_as_dict["ignoreWars"] = ["1.4"]
-    minimal_yaml_as_dict["threeDayWars"] = ["1.4", "11.0"]
+    minimal_yaml_as_dict["ignoreWars"] = ["1.4", "11.0"]
     actual = RankingParameterValidator(yaml.dump(minimal_yaml_as_dict)).validate()
-    assert actual.ignoreWars == ["1.4"]
-    assert actual.threeDayWars == ["1.4", "11.0"]
+    assert actual.ignoreWars == ["1.4", "11.0"]
 
 
 def test_validate_with_invalid_special_wars_fails(minimal_yaml_as_dict):
-    minimal_yaml_as_dict["threeDayWars"] = ["1.5"]
+    minimal_yaml_as_dict["ignoreWars"] = ["1.5"]
     with pytest.raises(ValidationError) as exc_info:
         RankingParameterValidator(yaml.dump(minimal_yaml_as_dict)).validate()
     assert "'1.5' does not match '[0-9]+\\\\.[0-4]'" in str(exc_info.value)

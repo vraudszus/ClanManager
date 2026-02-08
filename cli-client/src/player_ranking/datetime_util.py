@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 
 
 def get_season_start(ts: datetime) -> datetime:
@@ -43,3 +43,10 @@ def get_time_since_last_clan_war_started(ts: datetime) -> timedelta:
     last_thursday = ts - timedelta(days=days_since_last_thursday)
     last_thursday_10am = datetime.combine(last_thursday, time(hour=10), ts.tzinfo)
     return ts - last_thursday_10am
+
+
+def parse_timestamp(timestamp: str) -> datetime:
+    """
+    Parse a timestamp in the form returned by the CR API.
+    """
+    return datetime.strptime(timestamp, "%Y%m%dT%H%M%S.%fZ").replace(tzinfo=timezone.utc)

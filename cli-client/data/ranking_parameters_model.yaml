@@ -137,14 +137,6 @@ properties:
       pattern: "[0-9]+\\.[0-4]"
     uniqueItems: true
 
-  threeDayWars:
-    description: "3 day wars that should be scaled up to 4 days"
-    type: array
-    items:
-      type: string
-      pattern: "[0-9]+\\.[0-4]"
-    uniqueItems: true
-
 required:
   - clanTag
   - ratingWeights
@@ -156,6 +148,5 @@ required:
   - ratingHistoryFile
   - ratingHistoryImage
   - ignoreWars
-  - threeDayWars
 
 additionalProperties: false

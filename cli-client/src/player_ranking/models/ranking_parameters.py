@@ -80,4 +80,3 @@ class RankingParameters:
     ratingHistoryFile: str
     ratingHistoryImage: str
     ignoreWars: List[str] = field(default_factory=list)
-    threeDayWars: List[str] = field(default_factory=list)
