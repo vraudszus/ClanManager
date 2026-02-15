@@ -575,14 +575,14 @@ test = ["pytest (>=6)"]
 
 [[package]]
 name = "filelock"
-version = "3.20.3"
+version = "3.24.0"
 description = "A platform independent file lock."
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "filelock-3.20.3-py3-none-any.whl", hash = "sha256:4b0dda527ee31078689fc205ec4f1c1bf7d56cf88b6dc9426c4f230e46c2dce1"},
-    {file = "filelock-3.20.3.tar.gz", hash = "sha256:18c57ee915c7ec61cff0ecf7f0f869936c7c30191bb0cf406f1341778d0834e1"},
+    {file = "filelock-3.24.0-py3-none-any.whl", hash = "sha256:eebebb403d78363ef7be8e236b63cc6760b0004c7464dceaba3fd0afbd637ced"},
+    {file = "filelock-3.24.0.tar.gz", hash = "sha256:aeeab479339ddf463a1cdd1f15a6e6894db976071e5883efc94d22ed5139044b"},
 ]
 
 [[package]]
@@ -688,14 +688,14 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2,<1.0.0)"]
 
 [[package]]
 name = "google-api-python-client"
-version = "2.189.0"
+version = "2.190.0"
 description = "Google API Client Library for Python"
 optional = false
 python-versions = ">=3.7"
 groups = ["main"]
 files = [
-    {file = "google_api_python_client-2.189.0-py3-none-any.whl", hash = "sha256:a258c09660a49c6159173f8bbece171278e917e104a11f0640b34751b79c8a1a"},
-    {file = "google_api_python_client-2.189.0.tar.gz", hash = "sha256:45f2d8559b5c895dde6ad3fb33de025f5cb2c197fa5862f18df7f5295a172741"},
+    {file = "google_api_python_client-2.190.0-py3-none-any.whl", hash = "sha256:d9b5266758f96c39b8c21d9bbfeb4e58c14dbfba3c931f7c5a8d7fdcd292dd57"},
+    {file = "google_api_python_client-2.190.0.tar.gz", hash = "sha256:5357f34552e3724d80d2604c8fa146766e0a9d6bb0afada886fafed9feafeef6"},
 ]
 
 [package.dependencies]
@@ -1503,20 +1503,15 @@ xmp = ["defusedxml"]
 
 [[package]]
 name = "platformdirs"
-version = "4.5.1"
+version = "4.9.1"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
 optional = false
 python-versions = ">=3.10"
 groups = ["dev"]
 files = [
-    {file = "platformdirs-4.5.1-py3-none-any.whl", hash = "sha256:d03afa3963c806a9bed9d5125c8f4cb2fdaf74a55ab60e5d59b3fde758104d31"},
-    {file = "platformdirs-4.5.1.tar.gz", hash = "sha256:61d5cdcc6065745cdd94f0f878977f8de9437be93de97c1c12f853c9c0cdcbda"},
+    {file = "platformdirs-4.9.1-py3-none-any.whl", hash = "sha256:61d8b967d34791c162d30d60737369cbbd77debad5b981c4bfda1842e71e0d66"},
+    {file = "platformdirs-4.9.1.tar.gz", hash = "sha256:f310f16e89c4e29117805d8328f7c10876eeff36c94eac879532812110f7d39f"},
 ]
-
-[package.extras]
-docs = ["furo (>=2025.9.25)", "proselint (>=0.14)", "sphinx (>=8.2.3)", "sphinx-autodoc-typehints (>=3.2)"]
-test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=8.4.2)", "pytest-cov (>=7)", "pytest-mock (>=3.15.1)"]
-type = ["mypy (>=1.18.2)"]
 
 [[package]]
 name = "pluggy"
