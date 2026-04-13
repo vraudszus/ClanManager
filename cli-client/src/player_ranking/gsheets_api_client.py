@@ -1,11 +1,15 @@
 import itertools
 import json
 import logging
+import random
+import time
 from json import JSONDecodeError
+from typing import Callable, Any
 
 import pandas as pd
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,16 +34,16 @@ class GSheetsAPIClient:
                 body={"values": values},
             )
         )
-        response = request.execute()
+        response = self.execute_with_retry(lambda: request.execute(), f"write_sheet_{sheet_name}")
         return response
 
     def fetch_sheet(self, sheet_name: str) -> pd.DataFrame:
-        result = (
+        request = (
             self.service.spreadsheets()
             .values()
             .get(spreadsheetId=self.spreadsheet_id, range=sheet_name)
-            .execute()
         )
+        result = self.execute_with_retry(lambda: request.execute(), f"fetch_sheet_{sheet_name}")
         data = result.get("values", [])
         # pad short rows to prevent mismatch between column header count and data columns
         data = list(zip(*itertools.zip_longest(*data)))
@@ -49,12 +53,11 @@ class GSheetsAPIClient:
             return pd.DataFrame()
 
     def _get_sheet_id(self, sheet_name: str):
-        sheets_with_properties = (
-            self.service.spreadsheets()
-            .get(spreadsheetId=self.spreadsheet_id, fields="sheets.properties")
-            .execute()
-            .get("sheets")
+        request = self.service.spreadsheets().get(
+            spreadsheetId=self.spreadsheet_id, fields="sheets.properties"
         )
+        response = self.execute_with_retry(lambda: request.execute(), f"get_sheet_{sheet_name}")
+        sheets_with_properties = response.get("sheets")
         for sheet in sheets_with_properties:
             if sheet["properties"]["title"] == sheet_name:
                 return sheet["properties"]["sheetId"]
@@ -66,7 +69,7 @@ class GSheetsAPIClient:
             .values()
             .clear(spreadsheetId=self.spreadsheet_id, range=sheet_name)
         )
-        return request.execute()
+        return self.execute_with_retry(lambda: request.execute(), f"clear_sheet_{sheet_name}")
 
     @staticmethod
     def _df_to_sheets_values(df: pd.DataFrame) -> list[list[str]]:
@@ -100,3 +103,27 @@ class GSheetsAPIClient:
             raise EnvironmentError(f"Unable to parse gsheets service account key: {e}")
         creds = service_account.Credentials.from_service_account_info(service_account_key)
         return build("sheets", "v4", credentials=creds)
+
+    @staticmethod
+    def execute_with_retry(func: Callable[[], Any], op_name: str, max_retries: int = 5) -> Any:
+        for attempt in range(max_retries):
+            try:
+                return func()
+            except HttpError as e:
+                if e.resp.status in [500, 503]:
+                    delay = 2**attempt + random.uniform(0, 1)
+
+                    LOGGER.warning(
+                        "[%s] Retry %d/%d after %.2fs (error=%s)",
+                        op_name,
+                        attempt + 1,
+                        max_retries,
+                        delay,
+                        e,
+                    )
+
+                    time.sleep(delay)
+                else:
+                    raise  # rethrow non-retryable errors
+
+        raise Exception(f"Max retries {max_retries} exceeded for operation {op_name}")
