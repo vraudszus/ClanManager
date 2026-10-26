@@ -28,12 +28,14 @@ class Clan:
     def get_min(self, prop: str) -> int | float:
         if not self._members:
             return 0
-        return getattr(min(self._members.values(), key=lambda v: getattr(v, prop)), prop)
+        vals = [v for v in self._members.values() if getattr(v, prop) is not None]
+        return getattr(min(vals, key=lambda v: getattr(v, prop)), prop)
 
     def get_max(self, prop: str) -> int | float:
         if not self._members:
             return 0
-        return getattr(max(self._members.values(), key=lambda v: getattr(v, prop)), prop)
+        vals = [v for v in self._members.values() if getattr(v, prop) is not None]
+        return getattr(max(vals, key=lambda v: getattr(v, prop)), prop)
 
     def __len__(self) -> int:
         return len(self._members)
