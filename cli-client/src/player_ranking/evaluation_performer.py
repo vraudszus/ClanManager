@@ -190,9 +190,10 @@ class EvaluationPerformer:
 
         for player in self.clan.get_members():
             previous_league = player.previous_season_league_number
-            player.previous_league = normalize(
+            previous_league_rating = normalize(
                 previous_league, previous_league_max, previous_league_min, 1000
             )
+            player.previous_league = previous_league_rating if previous_league_rating else 0
 
             # only grant points to players in the highest league
             player.previous_trophies = 0
